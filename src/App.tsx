@@ -80,10 +80,16 @@ export default function App() {
           lead={editing}
           onClose={closeModal}
           onSave={(data) => {
+            const normalized = {
+              ...data,
+              contactadoEn: data.contactadoEn || undefined,
+              propuesta: data.propuesta || undefined,
+              sede: data.sede || undefined,
+            };
             if (editing) {
-              updateLead(editing.id, data);
+              updateLead(editing.id, normalized);
             } else {
-              addLead(data);
+              addLead(normalized);
             }
           }}
           onDelete={editing ? () => deleteLead(editing.id) : undefined}
