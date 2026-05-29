@@ -71,6 +71,8 @@ body {
   box-shadow: 0 4px 24px rgba(255, 179, 0, 0.06);
   flex-shrink: 0;
   backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 50;
 }
 
 .app-brand {
@@ -219,6 +221,8 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 0;
   background-image:
     radial-gradient(ellipse 60% 40% at 80% 50%, rgba(255, 179, 0, 0.04), transparent),
     var(--honeycomb);
@@ -849,4 +853,279 @@ body {
 .import-empty {
   color: var(--text-muted);
   opacity: 0.5;
+}
+
+/* Error toast */
+.error-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 300;
+  background: rgba(20, 5, 5, 0.97);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  color: #f87171;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  box-shadow: var(--shadow);
+  max-width: 380px;
+  animation: toast-in 0.2s ease;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.error-toast-msg {
+  flex: 1;
+  line-height: 1.45;
+}
+
+.error-toast-close {
+  background: none;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.error-toast-close:hover {
+  opacity: 1;
+}
+
+/* Export dropdown */
+.export-wrap {
+  position: relative;
+}
+
+.export-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  min-width: 200px;
+  box-shadow: var(--shadow);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.export-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.export-dropdown button:hover {
+  background: rgba(255, 179, 0, 0.08);
+  color: var(--honey-light);
+}
+
+.export-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+/* Contacts toolbar */
+.contacts-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.contacts-search {
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  width: 280px;
+}
+
+.contacts-search:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.contacts-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.contact-email-link {
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.contact-email-link:hover {
+  color: var(--honey-light);
+  text-decoration: underline;
+}
+
+/* Contact search in LeadModal */
+.field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.contact-search-wrap {
+  position: relative;
+}
+
+.contact-search-input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.contact-search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.contact-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 150;
+  box-shadow: var(--shadow);
+}
+
+.contact-dropdown-item {
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.contact-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.contact-dropdown-item:hover {
+  background: rgba(255, 179, 0, 0.08);
+}
+
+.contact-dropdown-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.contact-dropdown-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.contact-linked {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: rgba(255, 179, 0, 0.07);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+}
+
+.contact-linked-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.contact-linked-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--honey-light);
+}
+
+.contact-linked-company {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Contacts migration message */
+.contacts-migration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 2rem;
+}
+
+.contacts-migration-box {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 640px;
+  width: 100%;
+}
+
+.contacts-migration-box h3 {
+  margin: 0 0 0.75rem;
+  color: var(--honey-light);
+  font-size: 1rem;
+}
+
+.contacts-migration-box p {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.contacts-migration-sql {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.78rem;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.6;
+}
+
+.contacts-migration-error {
+  color: #f87171;
+  margin-top: 0.75rem;
 }

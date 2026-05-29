@@ -16,6 +16,7 @@ type DbRow = {
   contactado_en: string | null;
   propuesta: string | null;
   sede: string | null;
+  contact_id: string | null;
 };
 
 function fromDb(row: DbRow): Lead {
@@ -33,6 +34,7 @@ function fromDb(row: DbRow): Lead {
     contactadoEn: row.contactado_en ?? undefined,
     propuesta: (row.propuesta as PropuestaOption) ?? undefined,
     sede: (row.sede as SedeOption) ?? undefined,
+    contactId: row.contact_id ?? undefined,
   };
 }
 
@@ -49,6 +51,7 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.contactadoEn !== undefined) row.contactado_en = patch.contactadoEn || null;
   if (patch.propuesta !== undefined) row.propuesta = patch.propuesta || null;
   if (patch.sede !== undefined) row.sede = patch.sede || null;
+  if (patch.contactId !== undefined) row.contact_id = patch.contactId || null;
   return row;
 }
 
@@ -82,6 +85,7 @@ export function useLeads() {
           notas: data.notas,
           valor_estimado: data.valorEstimado,
           etapa: data.etapa ?? "nuevo",
+          contact_id: data.contactId || null,
         })
         .select()
         .single();
@@ -118,6 +122,8 @@ export function useLeads() {
     if (err) setError(err.message);
   }, [leads]);
 
+  const clearError = useCallback(() => setError(null), []);
+
   const deleteLead = useCallback(async (id: string) => {
     setLeads((prev) => prev.filter((l) => l.id !== id));
     const { error: err } = await supabase.from("leads").delete().eq("id", id);
@@ -144,5 +150,5 @@ export function useLeads() {
     return data.length;
   }, []);
 
-  return { leads, loading, error, addLead, addLeads, updateLead, moveLead, deleteLead };
+  return { leads, loading, error, clearError, addLead, addLeads, updateLead, moveLead, deleteLead };
 }

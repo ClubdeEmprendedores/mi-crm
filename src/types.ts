@@ -25,9 +25,21 @@ export type Lead = {
   contactadoEn?: string;
   propuesta?: PropuestaOption;
   sede?: SedeOption;
+  contactId?: string;
 };
 
-export type ViewMode = "kanban" | "lista";
+export type Contact = {
+  id: string;
+  nombre: string;
+  empresa: string;
+  email: string;
+  telefono: string;
+  instagram: string;
+  notas: string;
+  creadoEn: string;
+};
+
+export type ViewMode = "kanban" | "lista" | "contactos";
 
 export const STAGE_LABELS: Record<Stage, string> = {
   nuevo: "Nuevo",

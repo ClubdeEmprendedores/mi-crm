@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent } from "react";
-import type { Lead, PropuestaOption, SedeOption, Stage } from "../types";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import type { Contact, Lead, PropuestaOption, SedeOption, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 
 type Props = {
   lead: Lead | null;
+  contacts: Contact[];
   onClose: () => void;
   onSave: (data: {
     nombre: string;
@@ -18,6 +19,7 @@ type Props = {
     contactadoEn: string;
     propuesta: PropuestaOption | "";
     sede: SedeOption | "";
+    contactId?: string;
   }) => void;
   onDelete?: () => void;
 };
@@ -44,13 +46,17 @@ const empty = {
   contactadoEn: "",
   propuesta: "" as PropuestaOption | "",
   sede: "" as SedeOption | "",
+  contactId: "",
 };
 
 const FORM_ID = "lead-form";
 
-export function LeadModal({ lead, onClose, onSave, onDelete }: Props) {
+export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) {
   const [form, setForm] = useState(empty);
   const [maximized, setMaximized] = useState(false);
+  const [contactSearch, setContactSearch] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMaximized(false);
@@ -71,10 +77,13 @@ export function LeadModal({ lead, onClose, onSave, onDelete }: Props) {
         contactadoEn: isoToDateInput(lead.contactadoEn),
         propuesta: lead.propuesta ?? "",
         sede: lead.sede ?? "",
+        contactId: lead.contactId ?? "",
       });
     } else {
       setForm(empty);
     }
+    setContactSearch("");
+    setDropdownOpen(false);
   }, [lead]);
 
   const handleSubmit = (e: FormEvent) => {
@@ -97,9 +106,28 @@ export function LeadModal({ lead, onClose, onSave, onDelete }: Props) {
       contactadoEn: autoContactadoEn,
       propuesta: form.propuesta,
       sede: form.sede,
+      contactId: form.contactId || undefined,
     });
     onClose();
   };
+
+  const linkedContact = form.contactId
+    ? contacts.find((c) => c.id === form.contactId)
+    : null;
+
+  const contactResults =
+    contactSearch.length > 0
+      ? contacts
+          .filter((c) => {
+            const q = contactSearch.toLowerCase();
+            return (
+              c.nombre.toLowerCase().includes(q) ||
+              c.empresa.toLowerCase().includes(q) ||
+              c.email.toLowerCase().includes(q)
+            );
+          })
+          .slice(0, 6)
+      : [];
 
   const canSave = !!form.nombre.trim();
 
@@ -144,6 +172,72 @@ export function LeadModal({ lead, onClose, onSave, onDelete }: Props) {
 
         <form id={FORM_ID} onSubmit={handleSubmit} className="modal-form">
           <div className="modal-body">
+            {contacts.length > 0 && (
+              <div>
+                <span className="field-label">Contacto vinculado</span>
+                {linkedContact ? (
+                  <div className="contact-linked">
+                    <div className="contact-linked-info">
+                      <span className="contact-linked-name">{linkedContact.nombre}</span>
+                      {linkedContact.empresa && (
+                        <span className="contact-linked-company">{linkedContact.empresa}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      onClick={() => setForm({ ...form, contactId: "" })}
+                      title="Desvincular contacto"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className="contact-search-wrap" ref={searchRef}>
+                    <input
+                      className="contact-search-input"
+                      placeholder="Buscar contacto existente…"
+                      value={contactSearch}
+                      autoComplete="off"
+                      onChange={(e) => {
+                        setContactSearch(e.target.value);
+                        setDropdownOpen(true);
+                      }}
+                      onFocus={() => setDropdownOpen(true)}
+                      onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
+                    />
+                    {dropdownOpen && contactResults.length > 0 && (
+                      <div className="contact-dropdown">
+                        {contactResults.map((c) => (
+                          <div
+                            key={c.id}
+                            className="contact-dropdown-item"
+                            onMouseDown={() => {
+                              setForm({
+                                ...form,
+                                contactId: c.id,
+                                nombre: c.nombre,
+                                empresa: c.empresa,
+                                email: c.email,
+                                telefono: c.telefono,
+                                instagram: c.instagram,
+                              });
+                              setContactSearch("");
+                              setDropdownOpen(false);
+                            }}
+                          >
+                            <div className="contact-dropdown-name">{c.nombre}</div>
+                            <div className="contact-dropdown-meta">
+                              {[c.empresa, c.email, c.telefono].filter(Boolean).join(" · ")}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <label>
               Nombre *
               <input

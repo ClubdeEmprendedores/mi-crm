@@ -1,20 +1,67 @@
-import { useState } from "react";
-import { KanbanBoard } from "./components/KanbanBoard";
+import { useEffect, useRef, useState } from "react";
+import { ContactModal } from "./components/ContactModal";
+import { ContactsView } from "./components/ContactsView";
 import { ImportModal } from "./components/ImportModal";
+import { KanbanBoard } from "./components/KanbanBoard";
 import { LeadModal } from "./components/LeadModal";
 import { ListView } from "./components/ListView";
+import { useContacts } from "./hooks/useContacts";
 import { useLeads } from "./hooks/useLeads";
-import type { Lead, ViewMode } from "./types";
+import type { Contact, Lead, ViewMode } from "./types";
+import {
+  exportContactsCsv,
+  exportFullJson,
+  exportLeadsCsv,
+} from "./utils/exportData";
 
 export default function App() {
-  const { leads, loading, error, addLead, addLeads, updateLead, moveLead, deleteLead } = useLeads();
+  const {
+    leads, loading, error: leadsError, clearError: clearLeadsError,
+    addLead, addLeads, updateLead, moveLead, deleteLead,
+  } = useLeads();
+  const {
+    contacts, loading: contactsLoading, error: contactsError, clearError: clearContactsError,
+    addContact, updateContact, deleteContact,
+  } = useContacts();
+
   const [view, setView] = useState<ViewMode>("kanban");
   const [editing, setEditing] = useState<Lead | null | undefined>(undefined);
+  const [editingContact, setEditingContact] = useState<Contact | null | undefined>(undefined);
   const [importing, setImporting] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  const appError = leadsError || contactsError;
+  const clearError = () => { clearLeadsError(); clearContactsError(); };
+
+  // Auto-dismiss error toast after 6s
+  useEffect(() => {
+    if (!appError) return;
+    const t = setTimeout(clearError, 6000);
+    return () => clearTimeout(t);
+  }, [appError]);
+
+  // Close export dropdown on outside click
+  useEffect(() => {
+    if (!exportOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [exportOpen]);
 
   const openNew = () => setEditing(null);
   const openEdit = (lead: Lead) => setEditing(lead);
   const closeModal = () => setEditing(undefined);
+
+  const openNewContact = () => setEditingContact(null);
+  const openEditContact = (c: Contact) => setEditingContact(c);
+  const closeContactModal = () => setEditingContact(undefined);
+
+  const isContactsView = view === "contactos";
 
   return (
     <div className="app">
@@ -46,38 +93,105 @@ export default function App() {
           >
             Listado
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "contactos"}
+            className={view === "contactos" ? "active" : ""}
+            onClick={() => setView("contactos")}
+          >
+            Contactos
+          </button>
         </div>
 
         <div className="header-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => setImporting(true)}>
+          <div className="export-wrap" ref={exportRef}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setExportOpen((o) => !o)}
+            >
+              Exportar ▾
+            </button>
+            {exportOpen && (
+              <div className="export-dropdown">
+                <button
+                  onClick={() => { exportLeadsCsv(leads); setExportOpen(false); }}
+                >
+                  CSV — Leads
+                </button>
+                <button
+                  onClick={() => { exportContactsCsv(contacts); setExportOpen(false); }}
+                >
+                  CSV — Contactos
+                </button>
+                <div className="export-dropdown-divider" />
+                <button
+                  onClick={() => { exportFullJson(leads, contacts); setExportOpen(false); }}
+                >
+                  JSON — Backup completo
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setImporting(true)}
+          >
             Importar
           </button>
-          <button type="button" className="btn btn-primary" onClick={openNew}>
-            + Nuevo lead
-          </button>
+
+          {isContactsView ? (
+            <button type="button" className="btn btn-primary" onClick={openNewContact}>
+              + Nuevo contacto
+            </button>
+          ) : (
+            <button type="button" className="btn btn-primary" onClick={openNew}>
+              + Nuevo lead
+            </button>
+          )}
         </div>
       </header>
 
       <main className="app-main">
-        {loading ? (
+        {loading && !isContactsView ? (
           <div className="app-loading">Cargando leads…</div>
-        ) : error ? (
-          <div className="app-error">Error al conectar con Supabase: {error}</div>
         ) : view === "kanban" ? (
           <KanbanBoard leads={leads} onMove={moveLead} onEdit={openEdit} />
-        ) : (
+        ) : view === "lista" ? (
           <ListView leads={leads} onEdit={openEdit} onMove={moveLead} />
+        ) : (
+          <ContactsView
+            contacts={contacts}
+            loading={contactsLoading}
+            error={contactsError}
+            onEdit={openEditContact}
+          />
         )}
       </main>
 
       <footer className="app-footer">
-        Club de Emprendedores · {leads.length} lead
-        {leads.length !== 1 ? "s" : ""} · localStorage
+        Club de Emprendedores · {leads.length} lead{leads.length !== 1 ? "s" : ""}
+        {contacts.length > 0 && ` · ${contacts.length} contacto${contacts.length !== 1 ? "s" : ""}`}
       </footer>
 
+      {/* Error toast */}
+      {appError && (
+        <div className="error-toast" role="alert">
+          <span className="error-toast-msg">{appError}</span>
+          <button className="error-toast-close" onClick={clearError} aria-label="Cerrar">
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Lead modal */}
       {editing !== undefined && (
         <LeadModal
           lead={editing}
+          contacts={contacts}
           onClose={closeModal}
           onSave={(data) => {
             const normalized = {
@@ -96,10 +210,27 @@ export default function App() {
         />
       )}
 
+      {/* Contact modal */}
+      {editingContact !== undefined && (
+        <ContactModal
+          contact={editingContact}
+          onClose={closeContactModal}
+          onSave={(data) => {
+            if (editingContact) {
+              updateContact(editingContact.id, data);
+            } else {
+              addContact(data);
+            }
+          }}
+          onDelete={editingContact ? () => deleteContact(editingContact.id) : undefined}
+        />
+      )}
+
+      {/* Import modal */}
       {importing && (
         <ImportModal
           onClose={() => setImporting(false)}
-          onImport={(contacts) => addLeads(contacts)}
+          onImport={(items) => addLeads(items)}
         />
       )}
     </div>
