@@ -215,6 +215,30 @@ body {
   color: var(--honey);
 }
 
+/* Bulk action bar */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 1.5rem;
+  background: rgba(12, 12, 12, 0.98);
+  border-bottom: 1px solid var(--border-strong);
+  flex-shrink: 0;
+  animation: toast-in 0.15s ease;
+}
+
+.bulk-bar-count {
+  font-size: 0.875rem;
+  color: var(--honey);
+  font-weight: 500;
+  flex: 1;
+}
+
+.btn-sm {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+}
+
 /* Main */
 .app-main {
   flex: 1;
@@ -456,6 +480,24 @@ body {
 
 .list-table tbody tr:hover {
   background: rgba(255, 179, 0, 0.06);
+}
+
+.list-table tbody tr.selected {
+  background: rgba(255, 179, 0, 0.1);
+}
+
+.list-check-col {
+  width: 40px;
+  text-align: center;
+  padding-left: 0.75rem !important;
+  padding-right: 0 !important;
+}
+
+.list-checkbox {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--honey);
 }
 
 .list-name {

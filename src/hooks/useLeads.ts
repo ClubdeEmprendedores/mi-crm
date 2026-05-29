@@ -190,5 +190,12 @@ export function useLeads() {
     return toDelete.length;
   }, [leads]);
 
-  return { leads, loading, error, clearError, addLead, addLeads, updateLead, moveLead, deleteLead, countDuplicates, deduplicateLeads };
+  const deleteLeads = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+    setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
+    const { error: err } = await supabase.from("leads").delete().in("id", ids);
+    if (err) setError(err.message);
+  }, []);
+
+  return { leads, loading, error, clearError, addLead, addLeads, updateLead, moveLead, deleteLead, deleteLeads, countDuplicates, deduplicateLeads };
 }

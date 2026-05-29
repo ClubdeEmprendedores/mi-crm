@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ContactModal } from "./components/ContactModal";
 import { ContactsView } from "./components/ContactsView";
 import { ImportModal } from "./components/ImportModal";
@@ -17,7 +17,7 @@ import {
 export default function App() {
   const {
     leads, loading, error: leadsError, clearError: clearLeadsError,
-    addLead, addLeads, updateLead, moveLead, deleteLead,
+    addLead, addLeads, updateLead, moveLead, deleteLead, deleteLeads,
     countDuplicates, deduplicateLeads,
   } = useLeads();
   const {
@@ -26,6 +26,7 @@ export default function App() {
   } = useContacts();
 
   const [view, setView] = useState<ViewMode>("kanban");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Lead | null | undefined>(undefined);
   const [editingContact, setEditingContact] = useState<Contact | null | undefined>(undefined);
   const [importing, setImporting] = useState(false);
@@ -72,6 +73,39 @@ export default function App() {
 
   const isContactsView = view === "contactos";
 
+  const handleViewChange = (v: ViewMode) => {
+    setView(v);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback((ids: string[]) => {
+    setSelectedIds((prev) => {
+      const allSelected = ids.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allSelected) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+      return next;
+    });
+  }, []);
+
+  const handleDeleteSelected = async () => {
+    const ids = [...selectedIds];
+    const n = ids.length;
+    const s = n === 1 ? "" : "s";
+    if (!window.confirm(`¿Eliminar ${n} lead${s} seleccionado${s}?`)) return;
+    await deleteLeads(ids);
+    setSelectedIds(new Set());
+    setSuccessMsg(`Se eliminaron ${n} lead${s}.`);
+  };
+
   const handleDeduplicate = async () => {
     const count = countDuplicates();
     if (count === 0) { setSuccessMsg("No se encontraron duplicados."); return; }
@@ -98,7 +132,7 @@ export default function App() {
             role="tab"
             aria-selected={view === "kanban"}
             className={view === "kanban" ? "active" : ""}
-            onClick={() => setView("kanban")}
+            onClick={() => handleViewChange("kanban")}
           >
             Kanban
           </button>
@@ -107,7 +141,7 @@ export default function App() {
             role="tab"
             aria-selected={view === "lista"}
             className={view === "lista" ? "active" : ""}
-            onClick={() => setView("lista")}
+            onClick={() => handleViewChange("lista")}
           >
             Listado
           </button>
@@ -116,7 +150,7 @@ export default function App() {
             role="tab"
             aria-selected={view === "contactos"}
             className={view === "contactos" ? "active" : ""}
-            onClick={() => setView("contactos")}
+            onClick={() => handleViewChange("contactos")}
           >
             Contactos
           </button>
@@ -184,13 +218,34 @@ export default function App() {
         </div>
       </header>
 
+      {selectedIds.size > 0 && (
+        <div className="bulk-bar">
+          <span className="bulk-bar-count">
+            {selectedIds.size} lead{selectedIds.size !== 1 ? "s" : ""} seleccionado{selectedIds.size !== 1 ? "s" : ""}
+          </span>
+          <button className="btn btn-danger btn-sm" onClick={handleDeleteSelected}>
+            Eliminar
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>
+            Cancelar
+          </button>
+        </div>
+      )}
+
       <main className="app-main">
         {loading && !isContactsView ? (
           <div className="app-loading">Cargando leads…</div>
         ) : view === "kanban" ? (
           <KanbanBoard leads={leads} onMove={moveLead} onEdit={openEdit} />
         ) : view === "lista" ? (
-          <ListView leads={leads} onEdit={openEdit} onMove={moveLead} />
+          <ListView
+          leads={leads}
+          onEdit={openEdit}
+          onMove={moveLead}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onSelectAll={selectAll}
+        />
         ) : (
           <ContactsView
             contacts={contacts}

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { Lead, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
 import { InstagramLink } from "./InstagramLink";
@@ -6,6 +7,9 @@ type Props = {
   leads: Lead[];
   onEdit: (lead: Lead) => void;
   onMove: (id: string, etapa: Stage) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: (ids: string[]) => void;
 };
 
 function formatDate(iso: string) {
@@ -16,10 +20,18 @@ function formatDate(iso: string) {
   });
 }
 
-export function ListView({ leads, onEdit, onMove }: Props) {
+export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, onSelectAll }: Props) {
   const sorted = [...leads].sort(
     (a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime(),
   );
+  const allIds = sorted.map((l) => l.id);
+  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+  const someSelected = allIds.some((id) => selectedIds.has(id));
+
+  const headerCheckRef = useRef<HTMLInputElement>(null);
+  if (headerCheckRef.current) {
+    headerCheckRef.current.indeterminate = someSelected && !allSelected;
+  }
 
   if (sorted.length === 0) {
     return (
@@ -35,6 +47,15 @@ export function ListView({ leads, onEdit, onMove }: Props) {
       <table className="list-table">
         <thead>
           <tr>
+            <th className="list-check-col" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                ref={headerCheckRef}
+                checked={allSelected}
+                onChange={() => onSelectAll(allIds)}
+                className="list-checkbox"
+              />
+            </th>
             <th>Nombre</th>
             <th>Empresa</th>
             <th>Contacto</th>
@@ -46,13 +67,26 @@ export function ListView({ leads, onEdit, onMove }: Props) {
         </thead>
         <tbody>
           {sorted.map((lead) => (
-            <tr key={lead.id} onClick={() => onEdit(lead)}>
+            <tr
+              key={lead.id}
+              onClick={() => onEdit(lead)}
+              className={selectedIds.has(lead.id) ? "selected" : ""}
+            >
+              <td
+                className="list-check-col"
+                onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id); }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(lead.id)}
+                  onChange={() => onToggleSelect(lead.id)}
+                  className="list-checkbox"
+                />
+              </td>
               <td className="list-name">{lead.nombre}</td>
               <td>{lead.empresa || "—"}</td>
               <td className="list-contact">
-                {lead.instagram && (
-                  <InstagramLink username={lead.instagram} />
-                )}
+                {lead.instagram && <InstagramLink username={lead.instagram} />}
                 {lead.email && <span>{lead.email}</span>}
                 {lead.telefono && <span>{lead.telefono}</span>}
                 {!lead.instagram && !lead.email && !lead.telefono && "—"}
@@ -65,18 +99,11 @@ export function ListView({ leads, onEdit, onMove }: Props) {
                   <select
                     className="list-stage-select"
                     value={lead.etapa}
-                    style={{
-                      borderColor: STAGE_COLORS[lead.etapa],
-                      color: STAGE_COLORS[lead.etapa],
-                    }}
-                    onChange={(e) =>
-                      onMove(lead.id, e.target.value as Stage)
-                    }
+                    style={{ borderColor: STAGE_COLORS[lead.etapa], color: STAGE_COLORS[lead.etapa] }}
+                    onChange={(e) => onMove(lead.id, e.target.value as Stage)}
                   >
                     {STAGES.map((s) => (
-                      <option key={s} value={s}>
-                        {STAGE_LABELS[s]}
-                      </option>
+                      <option key={s} value={s}>{STAGE_LABELS[s]}</option>
                     ))}
                   </select>
                   {lead.etapa === "ganado" && lead.sede && (
