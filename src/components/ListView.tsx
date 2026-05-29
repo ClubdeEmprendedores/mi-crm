@@ -80,6 +80,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
                   type="checkbox"
                   checked={selectedIds.has(lead.id)}
                   onChange={() => onToggleSelect(lead.id)}
+                  onClick={(e) => e.stopPropagation()}
                   className="list-checkbox"
                 />
               </td>
