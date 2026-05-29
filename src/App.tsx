@@ -18,6 +18,7 @@ export default function App() {
   const {
     leads, loading, error: leadsError, clearError: clearLeadsError,
     addLead, addLeads, updateLead, moveLead, deleteLead,
+    countDuplicates, deduplicateLeads,
   } = useLeads();
   const {
     contacts, loading: contactsLoading, error: contactsError, clearError: clearContactsError,
@@ -30,6 +31,7 @@ export default function App() {
   const [importing, setImporting] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const appError = leadsError || contactsError;
   const clearError = () => { clearLeadsError(); clearContactsError(); };
@@ -40,6 +42,13 @@ export default function App() {
     const t = setTimeout(clearError, 6000);
     return () => clearTimeout(t);
   }, [appError]);
+
+  // Auto-dismiss success toast after 4s
+  useEffect(() => {
+    if (!successMsg) return;
+    const t = setTimeout(() => setSuccessMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [successMsg]);
 
   // Close export dropdown on outside click
   useEffect(() => {
@@ -62,6 +71,15 @@ export default function App() {
   const closeContactModal = () => setEditingContact(undefined);
 
   const isContactsView = view === "contactos";
+
+  const handleDeduplicate = async () => {
+    const count = countDuplicates();
+    if (count === 0) { setSuccessMsg("No se encontraron duplicados."); return; }
+    const s = count === 1 ? "" : "s";
+    if (!window.confirm(`Se encontraron ${count} lead${s} duplicado${s}. ¿Eliminar? Se conservará el más antiguo de cada grupo.`)) return;
+    const deleted = await deduplicateLeads();
+    if (deleted > 0) setSuccessMsg(`Se eliminaron ${deleted} lead${deleted === 1 ? "" : "s"} duplicado${deleted === 1 ? "" : "s"}.`);
+  };
 
   return (
     <div className="app">
@@ -135,6 +153,17 @@ export default function App() {
             )}
           </div>
 
+          {!isContactsView && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleDeduplicate}
+              title="Detecta y elimina leads duplicados por nombre, Instagram o email"
+            >
+              Deduplicar
+            </button>
+          )}
+
           <button
             type="button"
             className="btn btn-secondary"
@@ -176,6 +205,14 @@ export default function App() {
         Club de Emprendedores · {leads.length} lead{leads.length !== 1 ? "s" : ""}
         {contacts.length > 0 && ` · ${contacts.length} contacto${contacts.length !== 1 ? "s" : ""}`}
       </footer>
+
+      {/* Success toast */}
+      {successMsg && (
+        <div className="success-toast" role="status">
+          <span className="error-toast-msg">{successMsg}</span>
+          <button className="error-toast-close" onClick={() => setSuccessMsg(null)} aria-label="Cerrar">×</button>
+        </div>
+      )}
 
       {/* Error toast */}
       {appError && (

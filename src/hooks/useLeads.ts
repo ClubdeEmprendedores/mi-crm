@@ -2,6 +2,35 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Lead, PropuestaOption, SedeOption, Stage } from "../types";
 
+function normalize(s: string) {
+  return s.trim().toLowerCase().replace(/\s+/g, " ").normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function findDuplicateIds(leads: Lead[]): string[] {
+  const sorted = [...leads].sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
+  const seenIg = new Set<string>();
+  const seenEmail = new Set<string>();
+  const seenNombre = new Set<string>();
+  const toDelete: string[] = [];
+  for (const lead of sorted) {
+    const ig = normalize(lead.instagram);
+    const email = normalize(lead.email);
+    const nombre = normalize(lead.nombre);
+    const isDuplicate =
+      (ig && seenIg.has(ig)) ||
+      (email && seenEmail.has(email)) ||
+      (nombre && seenNombre.has(nombre));
+    if (isDuplicate) {
+      toDelete.push(lead.id);
+    } else {
+      if (ig) seenIg.add(ig);
+      if (email) seenEmail.add(email);
+      if (nombre) seenNombre.add(nombre);
+    }
+  }
+  return toDelete;
+}
+
 type DbRow = {
   id: string;
   nombre: string;
@@ -150,5 +179,16 @@ export function useLeads() {
     return data.length;
   }, []);
 
-  return { leads, loading, error, clearError, addLead, addLeads, updateLead, moveLead, deleteLead };
+  const countDuplicates = useCallback(() => findDuplicateIds(leads).length, [leads]);
+
+  const deduplicateLeads = useCallback(async (): Promise<number> => {
+    const toDelete = findDuplicateIds(leads);
+    if (toDelete.length === 0) return 0;
+    const { error: err } = await supabase.from("leads").delete().in("id", toDelete);
+    if (err) { setError(err.message); return 0; }
+    setLeads((prev) => prev.filter((l) => !toDelete.includes(l.id)));
+    return toDelete.length;
+  }, [leads]);
+
+  return { leads, loading, error, clearError, addLead, addLeads, updateLead, moveLead, deleteLead, countDuplicates, deduplicateLeads };
 }
