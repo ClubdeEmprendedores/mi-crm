@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Contact } from "../types";
+import { normalizeSearch } from "../utils/text";
 import { InstagramLink } from "./InstagramLink";
 
 type Props = {
@@ -61,13 +62,13 @@ CREATE POLICY "contacts_all" ON contacts
 
   const filtered = contacts.filter((c) => {
     if (!search.trim()) return true;
-    const q = search.toLowerCase();
+    const q = normalizeSearch(search.trim());
     return (
-      c.nombre.toLowerCase().includes(q) ||
-      c.empresa.toLowerCase().includes(q) ||
-      c.email.toLowerCase().includes(q) ||
-      c.telefono.includes(q) ||
-      c.instagram.toLowerCase().includes(q)
+      normalizeSearch(c.nombre).includes(q) ||
+      normalizeSearch(c.empresa).includes(q) ||
+      normalizeSearch(c.email).includes(q) ||
+      normalizeSearch(c.telefono).includes(q) ||
+      normalizeSearch(c.instagram).includes(q)
     );
   });
 

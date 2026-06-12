@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { Lead, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
+import { normalizeSearch } from "../utils/text";
 import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
 
@@ -39,15 +40,15 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
 
   const filtered = search.trim()
     ? sorted.filter((l) => {
-        const q = search.trim().toLowerCase();
+        const q = normalizeSearch(search.trim());
         return (
-          l.nombre.toLowerCase().includes(q) ||
-          l.empresa.toLowerCase().includes(q) ||
-          l.email.toLowerCase().includes(q) ||
-          l.telefono.toLowerCase().includes(q) ||
-          l.instagram.toLowerCase().includes(q) ||
-          l.notas.toLowerCase().includes(q) ||
-          l.tags.some((t) => t.toLowerCase().includes(q))
+          normalizeSearch(l.nombre).includes(q) ||
+          normalizeSearch(l.empresa).includes(q) ||
+          normalizeSearch(l.email).includes(q) ||
+          normalizeSearch(l.telefono).includes(q) ||
+          normalizeSearch(l.instagram).includes(q) ||
+          normalizeSearch(l.notas).includes(q) ||
+          l.tags.some((t) => normalizeSearch(t).includes(q))
         );
       })
     : sorted;

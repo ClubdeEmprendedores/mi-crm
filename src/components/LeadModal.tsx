@@ -3,6 +3,7 @@ import type { Contact, Lead, PropuestaOption, SedeOption, Stage } from "../types
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
 import { formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
+import { normalizeSearch } from "../utils/text";
 import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 
 type Props = {
@@ -164,11 +165,11 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
     contactSearch.length > 0
       ? contacts
           .filter((c) => {
-            const q = contactSearch.toLowerCase();
+            const q = normalizeSearch(contactSearch);
             return (
-              c.nombre.toLowerCase().includes(q) ||
-              c.empresa.toLowerCase().includes(q) ||
-              c.email.toLowerCase().includes(q)
+              normalizeSearch(c.nombre).includes(q) ||
+              normalizeSearch(c.empresa).includes(q) ||
+              normalizeSearch(c.email).includes(q)
             );
           })
           .slice(0, 6)
