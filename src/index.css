@@ -808,6 +808,36 @@ body {
   color: var(--text-muted);
 }
 
+.import-ig-guide {
+  margin: 1rem 1.25rem 0;
+  padding: 0.9rem 1rem;
+  background: #1a0a0e;
+  border: 1px solid #e1306c44;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.import-ig-guide strong {
+  color: var(--text);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.import-ig-guide ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.8;
+}
+
+.import-ig-guide code {
+  background: #2a1020;
+  color: #e1306c;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
 .import-error {
   margin: 0 1.25rem;
   color: #f87171;
@@ -895,6 +925,15 @@ body {
 .import-empty {
   color: var(--text-muted);
   opacity: 0.5;
+}
+
+.import-notas {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Error toast */

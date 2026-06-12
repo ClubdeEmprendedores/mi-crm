@@ -3,8 +3,10 @@ import type { Lead } from "../types";
 import { parseExcelFile } from "../utils/parseExcel";
 import { parseVCard } from "../utils/parseVCard";
 import { parseWhatsAppChat } from "../utils/parseWhatsAppChat";
+import { parseInstagramDMs } from "../utils/parseInstagramDMs";
+import { parseWhatsAppExport } from "../utils/parseWhatsAppExport";
 
-type Tab = "excel" | "vcf" | "chat";
+type Tab = "excel" | "vcf" | "chat" | "instagram" | "whatsapp";
 
 interface ParsedRow extends Partial<Lead> {
   _id: string;
@@ -20,12 +22,16 @@ const ACCEPT: Record<Tab, string> = {
   excel: ".xlsx,.xls,.csv",
   vcf: ".vcf",
   chat: ".txt",
+  instagram: ".json",
+  whatsapp: ".json",
 };
 
 const TAB_LABEL: Record<Tab, string> = {
   excel: "Excel / CSV",
   vcf: "Contactos (.vcf)",
   chat: "Chat WhatsApp (.txt)",
+  instagram: "Instagram DMs (.json)",
+  whatsapp: "WhatsApp (reconexión)",
 };
 
 export function ImportModal({ onClose, onImport }: Props) {
@@ -41,15 +47,24 @@ export function ImportModal({ onClose, onImport }: Props) {
     setError("");
   };
 
-  const parse = async (file: File) => {
+  const parse = async (files: File[]) => {
     setError("");
     setRows([]);
     setLoading(true);
     try {
       let parsed: Partial<Lead>[] = [];
-      if (tab === "excel") parsed = await parseExcelFile(file);
-      else if (tab === "vcf") parsed = parseVCard(await file.text());
-      else parsed = parseWhatsAppChat(await file.text());
+
+      if (tab === "instagram") {
+        const texts = await Promise.all(files.map((f) => f.text()));
+        parsed = parseInstagramDMs(texts);
+      } else {
+        const file = files[0];
+        if (!file) return;
+        if (tab === "excel") parsed = await parseExcelFile(file);
+        else if (tab === "vcf") parsed = parseVCard(await file.text());
+        else if (tab === "whatsapp") parsed = parseWhatsAppExport(await file.text());
+        else parsed = parseWhatsAppChat(await file.text());
+      }
 
       if (parsed.length === 0) {
         setError("No se encontraron contactos en el archivo.");
@@ -68,8 +83,10 @@ export function ImportModal({ onClose, onImport }: Props) {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) parse(file);
+    const files = Array.from(e.dataTransfer.files).filter((f) =>
+      tab === "instagram" ? f.name.endsWith(".json") : true
+    );
+    if (files.length > 0) parse(files);
   };
 
   const toggleAll = (val: boolean) =>
@@ -92,6 +109,8 @@ export function ImportModal({ onClose, onImport }: Props) {
     setTab(t);
     reset();
   };
+
+  const isMulti = tab === "instagram";
 
   return (
     <div className="modal-overlay" onClick={onClose} role="presentation">
@@ -122,6 +141,29 @@ export function ImportModal({ onClose, onImport }: Props) {
           ))}
         </div>
 
+        {tab === "instagram" && rows.length === 0 && !loading && (
+          <div className="import-ig-guide">
+            <strong>Cómo exportar tus DMs de Instagram:</strong>
+            <ol>
+              <li>Instagram → Configuración → Tu actividad → Descargar tu información</li>
+              <li>Seleccioná <em>Mensajes</em>, formato <strong>JSON</strong>, y pedí la descarga</li>
+              <li>Cuando llegue el ZIP, abrilo y navegá a <code>messages/inbox/</code></li>
+              <li>Seleccioná <strong>todos los archivos .json</strong> de esa carpeta y arrastralos acá</li>
+            </ol>
+          </div>
+        )}
+
+        {tab === "whatsapp" && rows.length === 0 && !loading && (
+          <div className="import-ig-guide">
+            <strong>Conversaciones de WhatsApp que no avanzaron:</strong>
+            <ol>
+              <li>Con el bridge de WhatsApp corriendo, ejecutá <code>export_leads.py</code> en <code>whatsapp-bridge/</code></li>
+              <li>Esto genera <code>whatsapp_leads.json</code> con los chats 1 a 1 (sin staff ni equipo CdE)</li>
+              <li>Arrastrá ese archivo acá — quedan ordenados del más viejo al más reciente</li>
+            </ol>
+          </div>
+        )}
+
         {rows.length === 0 && !loading && (
           <div
             className={`import-dropzone${dragging ? " dragging" : ""}`}
@@ -135,25 +177,34 @@ export function ImportModal({ onClose, onImport }: Props) {
           >
             <div className="import-dropzone-icon">↑</div>
             <p>
-              Arrastrá el archivo acá o{" "}
+              {isMulti
+                ? "Arrastrá todos los archivos .json acá o "
+                : "Arrastrá el archivo acá o "}
               <strong>hacé click para buscar</strong>
             </p>
-            <p className="import-hint">{ACCEPT[tab]}</p>
+            <p className="import-hint">
+              {isMulti ? "Podés seleccionar múltiples archivos a la vez" : ACCEPT[tab]}
+            </p>
             <input
               ref={inputRef}
               type="file"
               accept={ACCEPT[tab]}
+              multiple={isMulti}
               hidden
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) parse(f);
+                const files = Array.from(e.target.files ?? []);
+                if (files.length > 0) parse(files);
                 e.target.value = "";
               }}
             />
           </div>
         )}
 
-        {loading && <p className="import-hint" style={{ textAlign: "center", padding: "2rem" }}>Procesando archivo…</p>}
+        {loading && (
+          <p className="import-hint" style={{ textAlign: "center", padding: "2rem" }}>
+            Procesando archivo{isMulti ? "s" : ""}…
+          </p>
+        )}
 
         {error && <p className="import-error">{error}</p>}
 
@@ -178,8 +229,12 @@ export function ImportModal({ onClose, onImport }: Props) {
                     <th />
                     <th>Nombre</th>
                     <th>Teléfono</th>
-                    <th>Email</th>
-                    <th>Empresa</th>
+                    {tab === "whatsapp" ? <th>Notas</th> : (
+                      <>
+                        <th>Email</th>
+                        <th>Instagram</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -199,8 +254,18 @@ export function ImportModal({ onClose, onImport }: Props) {
                       </td>
                       <td>{row.nombre || <span className="import-empty">—</span>}</td>
                       <td>{row.telefono || <span className="import-empty">—</span>}</td>
-                      <td>{row.email || <span className="import-empty">—</span>}</td>
-                      <td>{row.empresa || <span className="import-empty">—</span>}</td>
+                      {tab === "whatsapp" ? (
+                        <td className="import-notas">{row.notas || <span className="import-empty">—</span>}</td>
+                      ) : (
+                        <>
+                          <td>{row.email || <span className="import-empty">—</span>}</td>
+                          <td>
+                            {row.instagram
+                              ? <span style={{ color: "#e1306c" }}>@{row.instagram}</span>
+                              : <span className="import-empty">—</span>}
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
