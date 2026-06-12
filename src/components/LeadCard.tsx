@@ -35,6 +35,9 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd }: Props) {
       }}
     >
       <h3 className="lead-card-title">{lead.nombre}</h3>
+      {lead.noRecontactar && (
+        <p className="lead-card-badge lead-card-badge--warning">⚠ No recontactar</p>
+      )}
       {lead.valorEstimado > 0 && (
         <p className="lead-card-value">{formatUSD(lead.valorEstimado)}</p>
       )}

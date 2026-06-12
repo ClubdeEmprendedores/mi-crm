@@ -438,6 +438,12 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.lead-card-badge--warning {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
 /* List */
 .list-wrap {
   padding: 1.25rem 1.5rem;
@@ -649,6 +655,20 @@ body {
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-muted);
+}
+
+.field-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+}
+
+.field-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: none;
 }
 
 .modal-body input,

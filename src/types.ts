@@ -3,6 +3,7 @@ export const STAGES = [
   "contactado",
   "propuesta",
   "ganado",
+  "exmiembro",
   "perdido",
 ] as const;
 
@@ -26,6 +27,8 @@ export type Lead = {
   propuesta?: PropuestaOption;
   sede?: SedeOption;
   contactId?: string;
+  motivoBaja: string;
+  noRecontactar: boolean;
 };
 
 export type Contact = {
@@ -46,6 +49,7 @@ export const STAGE_LABELS: Record<Stage, string> = {
   contactado: "Contactado",
   propuesta: "Propuesta",
   ganado: "Miembro",
+  exmiembro: "Ex-miembro",
   perdido: "Perdido",
 };
 
@@ -54,6 +58,7 @@ export const STAGE_COLORS: Record<Stage, string> = {
   contactado: "#FFC933",
   propuesta: "#E6A800",
   ganado: "#FFE566",
+  exmiembro: "#8b95a5",
   perdido: "#b45309",
 };
 

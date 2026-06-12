@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { Lead, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
 import { InstagramLink } from "./InstagramLink";
@@ -21,10 +21,27 @@ function formatDate(iso: string) {
 }
 
 export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, onSelectAll }: Props) {
+  const [search, setSearch] = useState("");
+
   const sorted = [...leads].sort(
     (a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime(),
   );
-  const allIds = sorted.map((l) => l.id);
+
+  const filtered = search.trim()
+    ? sorted.filter((l) => {
+        const q = search.trim().toLowerCase();
+        return (
+          l.nombre.toLowerCase().includes(q) ||
+          l.empresa.toLowerCase().includes(q) ||
+          l.email.toLowerCase().includes(q) ||
+          l.telefono.toLowerCase().includes(q) ||
+          l.instagram.toLowerCase().includes(q) ||
+          l.notas.toLowerCase().includes(q)
+        );
+      })
+    : sorted;
+
+  const allIds = filtered.map((l) => l.id);
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
   const someSelected = allIds.some((id) => selectedIds.has(id));
 
@@ -44,6 +61,23 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
 
   return (
     <div className="list-wrap">
+      <div className="contacts-toolbar">
+        <input
+          className="contacts-search"
+          type="search"
+          placeholder="Buscar por nombre, teléfono, notas…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <span className="contacts-count">
+          {filtered.length !== sorted.length
+            ? `${filtered.length} de ${sorted.length}`
+            : `${sorted.length} lead${sorted.length !== 1 ? "s" : ""}`}
+        </span>
+      </div>
+      {filtered.length === 0 ? (
+        <p className="list-empty-hint">No se encontraron leads para "{search}".</p>
+      ) : (
       <table className="list-table">
         <thead>
           <tr>
@@ -66,7 +100,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
           </tr>
         </thead>
         <tbody>
-          {sorted.map((lead) => (
+          {filtered.map((lead) => (
             <tr
               key={lead.id}
               onClick={() => onEdit(lead)}
@@ -120,6 +154,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
           ))}
         </tbody>
       </table>
+      )}
     </div>
   );
 }

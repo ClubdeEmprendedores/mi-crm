@@ -20,6 +20,8 @@ type Props = {
     propuesta: PropuestaOption | "";
     sede: SedeOption | "";
     contactId?: string;
+    motivoBaja: string;
+    noRecontactar: boolean;
   }) => void;
   onDelete?: () => void;
 };
@@ -47,6 +49,8 @@ const empty = {
   propuesta: "" as PropuestaOption | "",
   sede: "" as SedeOption | "",
   contactId: "",
+  motivoBaja: "",
+  noRecontactar: false,
 };
 
 const FORM_ID = "lead-form";
@@ -78,6 +82,8 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
         propuesta: lead.propuesta ?? "",
         sede: lead.sede ?? "",
         contactId: lead.contactId ?? "",
+        motivoBaja: lead.motivoBaja,
+        noRecontactar: lead.noRecontactar,
       });
     } else {
       setForm(empty);
@@ -107,6 +113,8 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
       propuesta: form.propuesta,
       sede: form.sede,
       contactId: form.contactId || undefined,
+      motivoBaja: form.motivoBaja,
+      noRecontactar: form.noRecontactar,
     });
     onClose();
   };
@@ -339,6 +347,27 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
                   ))}
                 </select>
               </label>
+            )}
+            {form.etapa === "exmiembro" && (
+              <>
+                <label>
+                  Motivo de baja
+                  <textarea
+                    rows={3}
+                    placeholder="¿Por qué dejó de ser miembro?"
+                    value={form.motivoBaja}
+                    onChange={(e) => setForm({ ...form, motivoBaja: e.target.value })}
+                  />
+                </label>
+                <label className="field-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={form.noRecontactar}
+                    onChange={(e) => setForm({ ...form, noRecontactar: e.target.checked })}
+                  />
+                  No recontactar (la salida no fue buena)
+                </label>
+              </>
             )}
             <div className="form-row">
               <label>

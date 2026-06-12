@@ -46,6 +46,8 @@ type DbRow = {
   propuesta: string | null;
   sede: string | null;
   contact_id: string | null;
+  motivo_baja: string | null;
+  no_recontactar: boolean | null;
 };
 
 function fromDb(row: DbRow): Lead {
@@ -64,6 +66,8 @@ function fromDb(row: DbRow): Lead {
     propuesta: (row.propuesta as PropuestaOption) ?? undefined,
     sede: (row.sede as SedeOption) ?? undefined,
     contactId: row.contact_id ?? undefined,
+    motivoBaja: row.motivo_baja ?? "",
+    noRecontactar: row.no_recontactar ?? false,
   };
 }
 
@@ -81,6 +85,8 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.propuesta !== undefined) row.propuesta = patch.propuesta || null;
   if (patch.sede !== undefined) row.sede = patch.sede || null;
   if (patch.contactId !== undefined) row.contact_id = patch.contactId || null;
+  if (patch.motivoBaja !== undefined) row.motivo_baja = patch.motivoBaja;
+  if (patch.noRecontactar !== undefined) row.no_recontactar = patch.noRecontactar;
   return row;
 }
 
@@ -115,6 +121,8 @@ export function useLeads() {
           valor_estimado: data.valorEstimado,
           etapa: data.etapa ?? "nuevo",
           contact_id: data.contactId || null,
+          motivo_baja: data.motivoBaja,
+          no_recontactar: data.noRecontactar,
         })
         .select()
         .single();
