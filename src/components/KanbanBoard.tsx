@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Lead, Stage } from "../types";
 import { STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
+import { normalizeSearch } from "../utils/text";
 import { LeadCard } from "./LeadCard";
 
 type Props = {
@@ -13,8 +14,24 @@ type Props = {
 export function KanbanBoard({ leads, onMove, onEdit, onSendWhatsapp }: Props) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<Stage | null>(null);
+  const [search, setSearch] = useState("");
 
-  const byStage = (stage: Stage) => leads.filter((l) => l.etapa === stage);
+  const q = normalizeSearch(search.trim());
+  const filtered = q
+    ? leads.filter(
+        (l) =>
+          normalizeSearch(l.nombre).includes(q) ||
+          normalizeSearch(l.empresa).includes(q) ||
+          normalizeSearch(l.email).includes(q) ||
+          normalizeSearch(l.telefono).includes(q) ||
+          normalizeSearch(l.instagram).includes(q) ||
+          normalizeSearch(l.notas).includes(q) ||
+          l.tags.some((t) => normalizeSearch(t).includes(q)),
+      )
+    : leads;
+
+  const byStage = (stage: Stage) => filtered.filter((l) => l.etapa === stage);
+  const hasAny = (stage: Stage) => leads.some((l) => l.etapa === stage);
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("text/plain", id);
@@ -42,7 +59,22 @@ export function KanbanBoard({ leads, onMove, onEdit, onSendWhatsapp }: Props) {
   };
 
   return (
-    <div className="kanban">
+    <div className="kanban-wrap">
+      <div className="kanban-toolbar">
+        <input
+          className="contacts-search"
+          type="search"
+          placeholder="Buscar por nombre, empresa, teléfono, notas…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {q && (
+          <span className="contacts-count">
+            {filtered.length} de {leads.length}
+          </span>
+        )}
+      </div>
+      <div className="kanban">
       {STAGES.map((stage) => {
         const items = byStage(stage);
         const isTarget = dropTarget === stage;
@@ -78,13 +110,14 @@ export function KanbanBoard({ leads, onMove, onEdit, onSendWhatsapp }: Props) {
               ))}
               {items.length === 0 && (
                 <p className="kanban-empty">
-                  {draggingId ? "Soltar aquí" : "Sin leads"}
+                  {draggingId ? "Soltar aquí" : q && hasAny(stage) ? "Sin resultados" : "Sin leads"}
                 </p>
               )}
             </div>
           </section>
         );
       })}
+      </div>
     </div>
   );
 }

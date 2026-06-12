@@ -264,6 +264,20 @@ body {
 }
 
 /* Kanban */
+.kanban-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.kanban-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0;
+}
+
 .kanban {
   display: flex;
   gap: 1rem;
