@@ -568,6 +568,17 @@ body {
   white-space: nowrap;
 }
 
+.list-wa-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.list-wa {
+  position: static;
+  flex-shrink: 0;
+}
+
 .list-propuesta {
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -813,6 +824,12 @@ body {
 
 .whatsapp-send:hover {
   background: rgba(74, 222, 128, 0.12) !important;
+}
+
+.whatsapp-last-sent {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .modal-body input,
@@ -1325,6 +1342,21 @@ body {
 }
 
 .contacts-search:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.list-sort-select {
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.list-sort-select:focus {
   outline: none;
   border-color: var(--primary);
 }

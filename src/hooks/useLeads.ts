@@ -49,6 +49,7 @@ type DbRow = {
   motivo_baja: string | null;
   no_recontactar: boolean | null;
   tags: string[] | null;
+  ultimo_mensaje_en: string | null;
 };
 
 function fromDb(row: DbRow): Lead {
@@ -70,6 +71,7 @@ function fromDb(row: DbRow): Lead {
     motivoBaja: row.motivo_baja ?? "",
     noRecontactar: row.no_recontactar ?? false,
     tags: row.tags ?? [],
+    ultimoMensajeEn: row.ultimo_mensaje_en ?? undefined,
   };
 }
 
@@ -90,6 +92,7 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.motivoBaja !== undefined) row.motivo_baja = patch.motivoBaja;
   if (patch.noRecontactar !== undefined) row.no_recontactar = patch.noRecontactar;
   if (patch.tags !== undefined) row.tags = patch.tags;
+  if (patch.ultimoMensajeEn !== undefined) row.ultimo_mensaje_en = patch.ultimoMensajeEn || null;
   return row;
 }
 

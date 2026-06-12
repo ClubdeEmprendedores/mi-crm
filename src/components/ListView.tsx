@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { Lead, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
+import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
 
 type Props = {
@@ -10,7 +11,10 @@ type Props = {
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onSelectAll: (ids: string[]) => void;
+  onSendWhatsapp: (id: string) => void;
 };
+
+type SortMode = "recientes" | "recontactar";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-AR", {
@@ -20,12 +24,18 @@ function formatDate(iso: string) {
   });
 }
 
-export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, onSelectAll }: Props) {
+export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, onSelectAll, onSendWhatsapp }: Props) {
   const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("recientes");
 
-  const sorted = [...leads].sort(
-    (a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime(),
-  );
+  const sorted = [...leads].sort((a, b) => {
+    if (sortMode === "recontactar") {
+      const at = a.ultimoMensajeEn ? new Date(a.ultimoMensajeEn).getTime() : -1;
+      const bt = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : -1;
+      return at - bt;
+    }
+    return new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime();
+  });
 
   const filtered = search.trim()
     ? sorted.filter((l) => {
@@ -70,6 +80,15 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <select
+          className="list-sort-select"
+          value={sortMode}
+          onChange={(e) => setSortMode(e.target.value as SortMode)}
+          title="Ordenar"
+        >
+          <option value="recientes">Más recientes</option>
+          <option value="recontactar">Para recontactar</option>
+        </select>
         <span className="contacts-count">
           {filtered.length !== sorted.length
             ? `${filtered.length} de ${sorted.length}`
@@ -97,6 +116,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
             <th>Propuesta</th>
             <th>Etapa</th>
             <th>Contactado</th>
+            <th>Último mensaje</th>
             <th>Creado</th>
           </tr>
         </thead>
@@ -158,6 +178,22 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
               </td>
               <td className="list-date">
                 {lead.contactadoEn ? formatDate(lead.contactadoEn) : "—"}
+              </td>
+              <td className="list-date list-wa-cell" onClick={(e) => e.stopPropagation()}>
+                {lead.ultimoMensajeEn ? formatDate(lead.ultimoMensajeEn) : "—"}
+                {lead.telefono && (
+                  <a
+                    className="lead-card-whatsapp list-wa"
+                    href={whatsappUrl(lead.telefono, sanTelmoReconexionMensaje(lead.nombre))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => onSendWhatsapp(lead.id)}
+                    title="Enviar WhatsApp"
+                    aria-label="Enviar WhatsApp"
+                  >
+                    💬
+                  </a>
+                )}
               </td>
               <td className="list-date">{formatDate(lead.creadoEn)}</td>
             </tr>

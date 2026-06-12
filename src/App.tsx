@@ -108,6 +108,11 @@ export default function App() {
     setSuccessMsg(`Se eliminaron ${n} lead${s}.`);
   };
 
+  const markMessaged = useCallback(
+    (id: string) => updateLead(id, { ultimoMensajeEn: new Date().toISOString() }),
+    [updateLead],
+  );
+
   const handleDeduplicate = async () => {
     const count = countDuplicates();
     if (count === 0) { setSuccessMsg("No se encontraron duplicados."); return; }
@@ -249,7 +254,7 @@ export default function App() {
         {loading && !isContactsView ? (
           <div className="app-loading">Cargando leads…</div>
         ) : view === "kanban" ? (
-          <KanbanBoard leads={leads} onMove={moveLead} onEdit={openEdit} />
+          <KanbanBoard leads={leads} onMove={moveLead} onEdit={openEdit} onSendWhatsapp={markMessaged} />
         ) : view === "lista" ? (
           <ListView
           leads={leads}
@@ -258,6 +263,7 @@ export default function App() {
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onSelectAll={selectAll}
+          onSendWhatsapp={markMessaged}
         />
         ) : (
           <ContactsView
@@ -312,6 +318,7 @@ export default function App() {
             }
           }}
           onDelete={editing ? () => deleteLead(editing.id) : undefined}
+          onSendWhatsapp={markMessaged}
         />
       )}
 
@@ -345,6 +352,7 @@ export default function App() {
           leads={leads}
           onClose={() => setCampaignOpen(false)}
           onApplyTag={(id, tags) => updateLead(id, { tags })}
+          onSendWhatsapp={markMessaged}
         />
       )}
     </div>

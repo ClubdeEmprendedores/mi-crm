@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { Contact, Lead, PropuestaOption, SedeOption, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
+import { formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 
@@ -8,6 +9,7 @@ type Props = {
   lead: Lead | null;
   contacts: Contact[];
   onClose: () => void;
+  onSendWhatsapp: (id: string) => void;
   onSave: (data: {
     nombre: string;
     empresa: string;
@@ -58,13 +60,14 @@ const empty = {
 
 const FORM_ID = "lead-form";
 
-export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) {
+export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWhatsapp }: Props) {
   const [form, setForm] = useState(empty);
   const [maximized, setMaximized] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [waMessage, setWaMessage] = useState("");
+  const [lastSent, setLastSent] = useState<string | undefined>(undefined);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -92,9 +95,11 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
         tags: lead.tags ?? [],
       });
       setWaMessage(sanTelmoReconexionMensaje(lead.nombre));
+      setLastSent(lead.ultimoMensajeEn);
     } else {
       setForm(empty);
       setWaMessage("");
+      setLastSent(undefined);
     }
     setContactSearch("");
     setDropdownOpen(false);
@@ -342,9 +347,20 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
                   href={whatsappUrl(form.telefono, waMessage)}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    if (!lead) return;
+                    const now = new Date().toISOString();
+                    setLastSent(now);
+                    onSendWhatsapp(lead.id);
+                  }}
                 >
                   💬 Abrir WhatsApp
                 </a>
+                {lastSent && (
+                  <p className="whatsapp-last-sent">
+                    Último mensaje: {formatShortDate(lastSent)}
+                  </p>
+                )}
               </div>
             )}
             <label>

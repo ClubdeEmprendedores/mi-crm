@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Lead } from "../types";
+import { formatShortDate } from "../utils/format";
 import { SAN_TELMO_CAMPAIGN, SAN_TELMO_TAG, type CampaignEntry } from "../utils/reconexionCampaign";
 import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 
@@ -7,13 +8,14 @@ type Props = {
   leads: Lead[];
   onClose: () => void;
   onApplyTag: (id: string, tags: string[]) => void;
+  onSendWhatsapp: (id: string) => void;
 };
 
 function normalizePhone(s: string) {
   return s.replace(/\D/g, "");
 }
 
-export function CampaignModal({ leads, onClose, onApplyTag }: Props) {
+export function CampaignModal({ leads, onClose, onApplyTag, onSendWhatsapp }: Props) {
   const [entries, setEntries] = useState<CampaignEntry[]>(SAN_TELMO_CAMPAIGN);
   const [tag, setTag] = useState(SAN_TELMO_TAG);
   const [extraText, setExtraText] = useState("");
@@ -101,6 +103,7 @@ export function CampaignModal({ leads, onClose, onApplyTag }: Props) {
                   <th>Teléfono</th>
                   <th>Motivo</th>
                   <th>Etiquetas actuales</th>
+                  <th>Último mensaje</th>
                   <th></th>
                 </tr>
               </thead>
@@ -127,12 +130,16 @@ export function CampaignModal({ leads, onClose, onApplyTag }: Props) {
                       )}
                     </td>
                     <td>
+                      {lead?.ultimoMensajeEn ? formatShortDate(lead.ultimoMensajeEn) : "—"}
+                    </td>
+                    <td>
                       {lead && (
                         <a
                           className="lead-card-whatsapp campaign-wa"
                           href={whatsappUrl(lead.telefono, sanTelmoReconexionMensaje(lead.nombre))}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => onSendWhatsapp(lead.id)}
                           title="Enviar WhatsApp"
                           aria-label="Enviar WhatsApp"
                         >

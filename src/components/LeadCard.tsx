@@ -1,24 +1,18 @@
 import type { Lead } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS } from "../types";
-import { formatUSD } from "../utils/format";
+import { formatShortDate, formatUSD } from "../utils/format";
 import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
-
-function formatShortDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "short",
-  });
-}
 
 type Props = {
   lead: Lead;
   onClick: () => void;
   onDragStart: (e: React.DragEvent, id: string) => void;
   onDragEnd: () => void;
+  onSendWhatsapp: (id: string) => void;
 };
 
-export function LeadCard({ lead, onClick, onDragStart, onDragEnd }: Props) {
+export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp }: Props) {
   return (
     <article
       className="lead-card"
@@ -41,7 +35,10 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd }: Props) {
           href={whatsappUrl(lead.telefono, sanTelmoReconexionMensaje(lead.nombre))}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSendWhatsapp(lead.id);
+          }}
           title="Enviar WhatsApp"
           aria-label="Enviar WhatsApp"
         >
@@ -74,6 +71,9 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd }: Props) {
       )}
       {lead.contactadoEn && (
         <p className="lead-card-meta">Contactado: {formatShortDate(lead.contactadoEn)}</p>
+      )}
+      {lead.ultimoMensajeEn && (
+        <p className="lead-card-meta">Último msj: {formatShortDate(lead.ultimoMensajeEn)}</p>
       )}
       {lead.instagram && (
         <p className="lead-card-ig">

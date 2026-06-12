@@ -30,6 +30,7 @@ export type Lead = {
   motivoBaja: string;
   noRecontactar: boolean;
   tags: string[];
+  ultimoMensajeEn?: string;
 };
 
 export type Contact = {

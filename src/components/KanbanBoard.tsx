@@ -7,9 +7,10 @@ type Props = {
   leads: Lead[];
   onMove: (id: string, etapa: Stage) => void;
   onEdit: (lead: Lead) => void;
+  onSendWhatsapp: (id: string) => void;
 };
 
-export function KanbanBoard({ leads, onMove, onEdit }: Props) {
+export function KanbanBoard({ leads, onMove, onEdit, onSendWhatsapp }: Props) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<Stage | null>(null);
 
@@ -72,6 +73,7 @@ export function KanbanBoard({ leads, onMove, onEdit }: Props) {
                   onClick={() => onEdit(lead)}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
+                  onSendWhatsapp={onSendWhatsapp}
                 />
               ))}
               {items.length === 0 && (
