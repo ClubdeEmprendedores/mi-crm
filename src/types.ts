@@ -29,6 +29,7 @@ export type Lead = {
   contactId?: string;
   motivoBaja: string;
   noRecontactar: boolean;
+  tags: string[];
 };
 
 export type Contact = {

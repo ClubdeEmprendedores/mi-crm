@@ -1,6 +1,7 @@
 import type { Lead } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS } from "../types";
 import { formatUSD } from "../utils/format";
+import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
 
 function formatShortDate(iso: string) {
@@ -34,9 +35,29 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd }: Props) {
         }
       }}
     >
+      {lead.telefono && (
+        <a
+          className="lead-card-whatsapp"
+          href={whatsappUrl(lead.telefono, sanTelmoReconexionMensaje(lead.nombre))}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          title="Enviar WhatsApp"
+          aria-label="Enviar WhatsApp"
+        >
+          💬
+        </a>
+      )}
       <h3 className="lead-card-title">{lead.nombre}</h3>
       {lead.noRecontactar && (
         <p className="lead-card-badge lead-card-badge--warning">⚠ No recontactar</p>
+      )}
+      {lead.tags.length > 0 && (
+        <div className="lead-card-tags">
+          {lead.tags.map((t) => (
+            <span key={t} className="lead-card-tag">{t}</span>
+          ))}
+        </div>
       )}
       {lead.valorEstimado > 0 && (
         <p className="lead-card-value">{formatUSD(lead.valorEstimado)}</p>

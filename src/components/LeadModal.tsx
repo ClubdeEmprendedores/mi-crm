@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { Contact, Lead, PropuestaOption, SedeOption, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
 import { sanitizeInstagramUsername } from "../utils/instagram";
+import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 
 type Props = {
   lead: Lead | null;
@@ -22,6 +23,7 @@ type Props = {
     contactId?: string;
     motivoBaja: string;
     noRecontactar: boolean;
+    tags: string[];
   }) => void;
   onDelete?: () => void;
 };
@@ -51,6 +53,7 @@ const empty = {
   contactId: "",
   motivoBaja: "",
   noRecontactar: false,
+  tags: [] as string[],
 };
 
 const FORM_ID = "lead-form";
@@ -60,6 +63,8 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
   const [maximized, setMaximized] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [waMessage, setWaMessage] = useState("");
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,13 +89,39 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
         contactId: lead.contactId ?? "",
         motivoBaja: lead.motivoBaja,
         noRecontactar: lead.noRecontactar,
+        tags: lead.tags ?? [],
       });
+      setWaMessage(sanTelmoReconexionMensaje(lead.nombre));
     } else {
       setForm(empty);
+      setWaMessage("");
     }
     setContactSearch("");
     setDropdownOpen(false);
+    setTagInput("");
   }, [lead]);
+
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (!t) return;
+    if (!form.tags.includes(t)) {
+      setForm({ ...form, tags: [...form.tags, t] });
+    }
+    setTagInput("");
+  };
+
+  const removeTag = (t: string) => {
+    setForm({ ...form, tags: form.tags.filter((x) => x !== t) });
+  };
+
+  const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag();
+    } else if (e.key === "Backspace" && !tagInput && form.tags.length > 0) {
+      removeTag(form.tags[form.tags.length - 1]);
+    }
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -115,6 +146,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
       contactId: form.contactId || undefined,
       motivoBaja: form.motivoBaja,
       noRecontactar: form.noRecontactar,
+      tags: form.tags,
     });
     onClose();
   };
@@ -297,6 +329,50 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete }: Props) 
                 />
               </label>
             </div>
+            {form.telefono && (
+              <div className="whatsapp-box">
+                <span className="field-label">Enviar WhatsApp</span>
+                <textarea
+                  rows={3}
+                  value={waMessage}
+                  onChange={(e) => setWaMessage(e.target.value)}
+                />
+                <a
+                  className="btn btn-secondary btn-sm whatsapp-send"
+                  href={whatsappUrl(form.telefono, waMessage)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  💬 Abrir WhatsApp
+                </a>
+              </div>
+            )}
+            <label>
+              Etiquetas
+              <div className="tag-input-row">
+                {form.tags.map((t) => (
+                  <span key={t} className="tag-chip">
+                    {t}
+                    <button
+                      type="button"
+                      className="tag-chip-remove"
+                      onClick={() => removeTag(t)}
+                      aria-label={`Quitar etiqueta ${t}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  className="tag-input"
+                  value={tagInput}
+                  placeholder="Agregar etiqueta…"
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  onBlur={addTag}
+                />
+              </div>
+            </label>
             <label>
               Usuario de Instagram
               <div className="input-prefix">

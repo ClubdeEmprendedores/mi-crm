@@ -36,7 +36,8 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
           l.email.toLowerCase().includes(q) ||
           l.telefono.toLowerCase().includes(q) ||
           l.instagram.toLowerCase().includes(q) ||
-          l.notas.toLowerCase().includes(q)
+          l.notas.toLowerCase().includes(q) ||
+          l.tags.some((t) => t.toLowerCase().includes(q))
         );
       })
     : sorted;
@@ -118,7 +119,16 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
                   className="list-checkbox"
                 />
               </td>
-              <td className="list-name">{lead.nombre}</td>
+              <td className="list-name">
+                {lead.nombre}
+                {lead.tags.length > 0 && (
+                  <div className="lead-card-tags">
+                    {lead.tags.map((t) => (
+                      <span key={t} className="lead-card-tag">{t}</span>
+                    ))}
+                  </div>
+                )}
+              </td>
               <td>{lead.empresa || "—"}</td>
               <td className="list-contact">
                 {lead.instagram && <InstagramLink username={lead.instagram} />}

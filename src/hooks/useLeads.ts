@@ -48,6 +48,7 @@ type DbRow = {
   contact_id: string | null;
   motivo_baja: string | null;
   no_recontactar: boolean | null;
+  tags: string[] | null;
 };
 
 function fromDb(row: DbRow): Lead {
@@ -68,6 +69,7 @@ function fromDb(row: DbRow): Lead {
     contactId: row.contact_id ?? undefined,
     motivoBaja: row.motivo_baja ?? "",
     noRecontactar: row.no_recontactar ?? false,
+    tags: row.tags ?? [],
   };
 }
 
@@ -87,6 +89,7 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.contactId !== undefined) row.contact_id = patch.contactId || null;
   if (patch.motivoBaja !== undefined) row.motivo_baja = patch.motivoBaja;
   if (patch.noRecontactar !== undefined) row.no_recontactar = patch.noRecontactar;
+  if (patch.tags !== undefined) row.tags = patch.tags;
   return row;
 }
 
@@ -123,6 +126,7 @@ export function useLeads() {
           contact_id: data.contactId || null,
           motivo_baja: data.motivoBaja,
           no_recontactar: data.noRecontactar,
+          tags: data.tags ?? [],
         })
         .select()
         .single();
@@ -177,6 +181,7 @@ export function useLeads() {
       notas: data.notas ?? "",
       valor_estimado: data.valorEstimado ?? 0,
       etapa: "nuevo",
+      tags: data.tags ?? [],
     }));
     const { data, error: err } = await supabase
       .from("leads")

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CampaignModal } from "./components/CampaignModal";
 import { ContactModal } from "./components/ContactModal";
 import { ContactsView } from "./components/ContactsView";
 import { ImportModal } from "./components/ImportModal";
@@ -30,6 +31,7 @@ export default function App() {
   const [editing, setEditing] = useState<Lead | null | undefined>(undefined);
   const [editingContact, setEditingContact] = useState<Contact | null | undefined>(undefined);
   const [importing, setImporting] = useState(false);
+  const [campaignOpen, setCampaignOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -206,6 +208,17 @@ export default function App() {
             Importar
           </button>
 
+          {!isContactsView && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setCampaignOpen(true)}
+              title="Leads que pidieron una sede en Capital y todavía no se les contó de San Telmo"
+            >
+              📍 Reconexión
+            </button>
+          )}
+
           {isContactsView ? (
             <button type="button" className="btn btn-primary" onClick={openNewContact}>
               + Nuevo contacto
@@ -323,6 +336,15 @@ export default function App() {
         <ImportModal
           onClose={() => setImporting(false)}
           onImport={(items) => addLeads(items)}
+        />
+      )}
+
+      {/* Reconnection campaign modal */}
+      {campaignOpen && (
+        <CampaignModal
+          leads={leads}
+          onClose={() => setCampaignOpen(false)}
+          onApplyTag={(id, tags) => updateLead(id, { tags })}
         />
       )}
     </div>
