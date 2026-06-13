@@ -12,6 +12,11 @@ export type Stage = (typeof STAGES)[number];
 export type PropuestaOption = "sanfer" | "santelmo" | "palermo";
 export type SedeOption = "sanfer" | "santelmo";
 
+export type HistorialEntry = {
+  fecha: string;
+  nota: string;
+};
+
 export type Lead = {
   id: string;
   nombre: string;
@@ -20,7 +25,6 @@ export type Lead = {
   telefono: string;
   instagram: string;
   notas: string;
-  valorEstimado: number;
   etapa: Stage;
   creadoEn: string;
   contactadoEn?: string;
@@ -31,6 +35,7 @@ export type Lead = {
   noRecontactar: boolean;
   tags: string[];
   ultimoMensajeEn?: string;
+  historial: HistorialEntry[];
 };
 
 export type Contact = {

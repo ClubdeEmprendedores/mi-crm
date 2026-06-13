@@ -30,7 +30,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 export function exportLeadsCsv(leads: Lead[]) {
   const header = csvRow([
     "Nombre", "Empresa", "Email", "Teléfono", "Instagram",
-    "Etapa", "Valor USD", "Propuesta", "Sede",
+    "Etapa", "Propuesta", "Sede",
     "Fecha Contacto", "Fecha Creación", "Notas",
   ]);
   const rows = leads.map((l) =>
@@ -38,7 +38,6 @@ export function exportLeadsCsv(leads: Lead[]) {
       l.nombre, l.empresa, l.email, l.telefono,
       l.instagram ? `@${l.instagram}` : "",
       STAGE_LABELS[l.etapa],
-      l.valorEstimado || 0,
       l.propuesta ? PROPUESTA_LABELS[l.propuesta] : "",
       l.sede ? SEDE_LABELS[l.sede] : "",
       l.contactadoEn ? l.contactadoEn.slice(0, 10) : "",

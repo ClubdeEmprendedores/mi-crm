@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import type { Lead, PropuestaOption, SedeOption, Stage } from "../types";
+import type { HistorialEntry, Lead, PropuestaOption, SedeOption, Stage } from "../types";
 
 function normalize(s: string) {
   return s.trim().toLowerCase().replace(/\s+/g, " ").normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -39,7 +39,6 @@ type DbRow = {
   telefono: string;
   instagram: string;
   notas: string;
-  valor_estimado: number;
   etapa: string;
   creado_en: string;
   contactado_en: string | null;
@@ -50,6 +49,7 @@ type DbRow = {
   no_recontactar: boolean | null;
   tags: string[] | null;
   ultimo_mensaje_en: string | null;
+  historial: HistorialEntry[] | null;
 };
 
 function fromDb(row: DbRow): Lead {
@@ -61,7 +61,6 @@ function fromDb(row: DbRow): Lead {
     telefono: row.telefono,
     instagram: row.instagram,
     notas: row.notas,
-    valorEstimado: row.valor_estimado,
     etapa: row.etapa as Stage,
     creadoEn: row.creado_en,
     contactadoEn: row.contactado_en ?? undefined,
@@ -72,6 +71,7 @@ function fromDb(row: DbRow): Lead {
     noRecontactar: row.no_recontactar ?? false,
     tags: row.tags ?? [],
     ultimoMensajeEn: row.ultimo_mensaje_en ?? undefined,
+    historial: row.historial ?? [],
   };
 }
 
@@ -83,7 +83,6 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.telefono !== undefined) row.telefono = patch.telefono;
   if (patch.instagram !== undefined) row.instagram = patch.instagram;
   if (patch.notas !== undefined) row.notas = patch.notas;
-  if (patch.valorEstimado !== undefined) row.valor_estimado = patch.valorEstimado;
   if (patch.etapa !== undefined) row.etapa = patch.etapa;
   if (patch.contactadoEn !== undefined) row.contactado_en = patch.contactadoEn || null;
   if (patch.propuesta !== undefined) row.propuesta = patch.propuesta || null;
@@ -93,6 +92,7 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.noRecontactar !== undefined) row.no_recontactar = patch.noRecontactar;
   if (patch.tags !== undefined) row.tags = patch.tags;
   if (patch.ultimoMensajeEn !== undefined) row.ultimo_mensaje_en = patch.ultimoMensajeEn || null;
+  if (patch.historial !== undefined) row.historial = patch.historial;
   return row;
 }
 
@@ -124,12 +124,12 @@ export function useLeads() {
           telefono: data.telefono,
           instagram: data.instagram,
           notas: data.notas,
-          valor_estimado: data.valorEstimado,
           etapa: data.etapa ?? "nuevo",
           contact_id: data.contactId || null,
           motivo_baja: data.motivoBaja,
           no_recontactar: data.noRecontactar,
           tags: data.tags ?? [],
+          historial: data.historial ?? [],
         })
         .select()
         .single();
@@ -182,9 +182,9 @@ export function useLeads() {
       telefono: data.telefono ?? "",
       instagram: data.instagram ?? "",
       notas: data.notas ?? "",
-      valor_estimado: data.valorEstimado ?? 0,
       etapa: "nuevo",
       tags: data.tags ?? [],
+      historial: data.historial ?? [],
     }));
     const { data, error: err } = await supabase
       .from("leads")

@@ -1,6 +1,6 @@
 import type { Lead } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS } from "../types";
-import { formatShortDate, formatUSD } from "../utils/format";
+import { formatShortDate } from "../utils/format";
 import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
 
@@ -55,9 +55,6 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp
             <span key={t} className="lead-card-tag">{t}</span>
           ))}
         </div>
-      )}
-      {lead.valorEstimado > 0 && (
-        <p className="lead-card-value">{formatUSD(lead.valorEstimado)}</p>
       )}
       {lead.etapa === "ganado" && lead.sede && (
         <p className="lead-card-badge lead-card-badge--sede">

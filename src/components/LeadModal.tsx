@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import type { Contact, Lead, PropuestaOption, SedeOption, Stage } from "../types";
+import type { Contact, HistorialEntry, Lead, PropuestaOption, SedeOption, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
-import { formatShortDate } from "../utils/format";
+import { formatDate, formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 import { normalizeSearch } from "../utils/text";
 import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
@@ -18,7 +18,6 @@ type Props = {
     telefono: string;
     instagram: string;
     notas: string;
-    valorEstimado: number;
     etapa: Stage;
     contactadoEn: string;
     propuesta: PropuestaOption | "";
@@ -27,6 +26,7 @@ type Props = {
     motivoBaja: string;
     noRecontactar: boolean;
     tags: string[];
+    historial: HistorialEntry[];
   }) => void;
   onDelete?: () => void;
 };
@@ -48,7 +48,6 @@ const empty = {
   telefono: "",
   instagram: "",
   notas: "",
-  valorEstimado: "",
   etapa: "nuevo" as Stage,
   contactadoEn: "",
   propuesta: "" as PropuestaOption | "",
@@ -57,6 +56,7 @@ const empty = {
   motivoBaja: "",
   noRecontactar: false,
   tags: [] as string[],
+  historial: [] as HistorialEntry[],
 };
 
 const FORM_ID = "lead-form";
@@ -67,6 +67,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
   const [contactSearch, setContactSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
+  const [historialInput, setHistorialInput] = useState("");
   const [waMessage, setWaMessage] = useState("");
   const [lastSent, setLastSent] = useState<string | undefined>(undefined);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -84,8 +85,6 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
         telefono: lead.telefono,
         instagram: lead.instagram,
         notas: lead.notas,
-        valorEstimado:
-          lead.valorEstimado > 0 ? String(lead.valorEstimado) : "",
         etapa: lead.etapa,
         contactadoEn: isoToDateInput(lead.contactadoEn),
         propuesta: lead.propuesta ?? "",
@@ -94,6 +93,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
         motivoBaja: lead.motivoBaja,
         noRecontactar: lead.noRecontactar,
         tags: lead.tags ?? [],
+        historial: lead.historial ?? [],
       });
       setWaMessage(sanTelmoReconexionMensaje(lead.nombre));
       setLastSent(lead.ultimoMensajeEn);
@@ -105,6 +105,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
     setContactSearch("");
     setDropdownOpen(false);
     setTagInput("");
+    setHistorialInput("");
   }, [lead]);
 
   const addTag = () => {
@@ -129,10 +130,23 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
     }
   };
 
+  const addHistorialEntry = () => {
+    const nota = historialInput.trim();
+    if (!nota) return;
+    setForm({
+      ...form,
+      historial: [{ fecha: new Date().toISOString(), nota }, ...form.historial],
+    });
+    setHistorialInput("");
+  };
+
+  const removeHistorialEntry = (index: number) => {
+    setForm({ ...form, historial: form.historial.filter((_, i) => i !== index) });
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.nombre.trim()) return;
-    const valor = parseFloat(form.valorEstimado);
     const autoContactadoEn =
       form.etapa === "contactado" && !form.contactadoEn
         ? new Date().toISOString()
@@ -145,7 +159,6 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
       instagram: sanitizeInstagramUsername(form.instagram),
       notas: form.notas,
       etapa: form.etapa,
-      valorEstimado: Number.isFinite(valor) && valor >= 0 ? valor : 0,
       contactadoEn: autoContactadoEn,
       propuesta: form.propuesta,
       sede: form.sede,
@@ -153,6 +166,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
       motivoBaja: form.motivoBaja,
       noRecontactar: form.noRecontactar,
       tags: form.tags,
+      historial: form.historial,
     });
     onClose();
   };
@@ -299,22 +313,6 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                 value={form.empresa}
                 onChange={(e) => setForm({ ...form, empresa: e.target.value })}
               />
-            </label>
-            <label>
-              Valor estimado (USD)
-              <div className="input-prefix">
-                <span className="input-prefix-symbol">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  value={form.valorEstimado}
-                  onChange={(e) =>
-                    setForm({ ...form, valorEstimado: e.target.value })
-                  }
-                />
-              </div>
             </label>
             <div className="form-row">
               <label>
@@ -498,6 +496,47 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                 onChange={(e) => setForm({ ...form, notas: e.target.value })}
               />
             </label>
+            <div className="historial-box">
+              <span className="field-label">Historial de conversación</span>
+              {form.historial.length > 0 && (
+                <ul className="historial-list">
+                  {form.historial.map((entry, i) => (
+                    <li key={i} className="historial-entry">
+                      <div className="historial-entry-header">
+                        <span className="historial-entry-date">
+                          {formatDate(entry.fecha)}
+                        </span>
+                        <button
+                          type="button"
+                          className="historial-entry-remove"
+                          onClick={() => removeHistorialEntry(i)}
+                          aria-label="Eliminar entrada del historial"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className="historial-entry-text">{entry.nota}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="historial-add">
+                <textarea
+                  rows={2}
+                  placeholder="¿Qué se le mandó? ¿Qué respondió?"
+                  value={historialInput}
+                  onChange={(e) => setHistorialInput(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm historial-add-btn"
+                  onClick={addHistorialEntry}
+                  disabled={!historialInput.trim()}
+                >
+                  + Agregar al historial
+                </button>
+              </div>
+            </div>
           </div>
 
           <footer className="modal-footer">

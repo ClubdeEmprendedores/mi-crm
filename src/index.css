@@ -392,13 +392,6 @@ body {
   font-weight: 600;
 }
 
-.lead-card-value {
-  margin: 0 0 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--accent);
-}
-
 .lead-card-ig {
   margin: 0 0 0.35rem;
 }
@@ -844,6 +837,76 @@ body {
   margin: 0;
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+.historial-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.historial-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.historial-entry {
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.historial-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.2rem;
+}
+
+.historial-entry-date {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.historial-entry-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.6;
+}
+
+.historial-entry-remove:hover {
+  opacity: 1;
+}
+
+.historial-entry-text {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.historial-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.historial-add-btn {
+  align-self: flex-start;
 }
 
 .modal-body input,
