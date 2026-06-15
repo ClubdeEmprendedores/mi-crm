@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import type { Lead } from "../types";
 import { parseExcelFile } from "../utils/parseExcel";
 import { parseVCard } from "../utils/parseVCard";
@@ -41,6 +42,8 @@ const TAB_LABEL: Record<Tab, string> = {
 };
 
 export function ImportModal({ leads, onClose, onImport, onImportHistorial }: Props) {
+  useEscapeKey(onClose);
+
   const [tab, setTab] = useState<Tab>("excel");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [error, setError] = useState("");

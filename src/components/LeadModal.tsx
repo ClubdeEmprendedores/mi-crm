@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { Contact, HistorialEntry, Lead, PropuestaOption, SedeOption, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import { formatDate, formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 import { normalizeSearch } from "../utils/text";
@@ -71,6 +72,8 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
   const [waMessage, setWaMessage] = useState("");
   const [lastSent, setLastSent] = useState<string | undefined>(undefined);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEscapeKey(onClose);
 
   useEffect(() => {
     setMaximized(false);

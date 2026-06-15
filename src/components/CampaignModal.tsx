@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Lead } from "../types";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import { formatShortDate } from "../utils/format";
 import { SAN_TELMO_CAMPAIGN, SAN_TELMO_TAG, type CampaignEntry } from "../utils/reconexionCampaign";
 import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
@@ -16,6 +17,8 @@ function normalizePhone(s: string) {
 }
 
 export function CampaignModal({ leads, onClose, onApplyTag, onSendWhatsapp }: Props) {
+  useEscapeKey(onClose);
+
   const [entries, setEntries] = useState<CampaignEntry[]>(SAN_TELMO_CAMPAIGN);
   const [tag, setTag] = useState(SAN_TELMO_TAG);
   const [extraText, setExtraText] = useState("");

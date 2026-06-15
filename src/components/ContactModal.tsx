@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { Contact } from "../types";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 
 type Props = {
@@ -22,6 +23,8 @@ const FORM_ID = "contact-form";
 
 export function ContactModal({ contact, onClose, onSave, onDelete }: Props) {
   const [form, setForm] = useState(empty);
+
+  useEscapeKey(onClose);
 
   useEffect(() => {
     if (contact) {
