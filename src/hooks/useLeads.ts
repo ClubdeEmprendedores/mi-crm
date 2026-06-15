@@ -2,27 +2,61 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { HistorialEntry, Lead, PropuestaOption, SedeOption, Stage } from "../types";
 import { mergeHistorial } from "../utils/mergeHistorial";
+import { phoneKey } from "../utils/phone";
 
 function normalize(s: string) {
   return s.trim().toLowerCase().replace(/\s+/g, " ").normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
+// Etiquetas que se usan para categorizar chats de WhatsApp, no son nombres reales.
+const JUNK_NAMES = new Set(["aprobado", "no aprobado"]);
+
+/** True si `nombre` no sirve como nombre real (vacío, etiqueta de categoría, o el propio teléfono). */
+function isJunkName(nombre: string, telefono: string): boolean {
+  const n = nombre.trim();
+  if (!n) return true;
+  if (JUNK_NAMES.has(n.toLowerCase())) return true;
+  if (/^\d+$/.test(n) && n === telefono.trim()) return true;
+  return false;
+}
+
+// Si un mismo valor de instagram/email/teléfono aparece en más de esta cantidad de
+// leads, es probable que sea un texto genérico de una importación vieja (ej. "No tengo",
+// "Número de campaña", "Revender") y no un identificador real de una persona.
+const MAX_SHARED = 4;
+
+function buildFrequency(leads: Lead[], pick: (l: Lead) => string): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const lead of leads) {
+    const key = pick(lead);
+    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
 function findDuplicateGroups(leads: Lead[]): { primaryId: string; duplicateIds: string[] }[] {
   const sorted = [...leads].sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
+  const igCounts = buildFrequency(leads, (l) => normalize(l.instagram));
+  const emailCounts = buildFrequency(leads, (l) => normalize(l.email));
+  const phoneCounts = buildFrequency(leads, (l) => phoneKey(l.telefono));
+
   const seenIg = new Map<string, string>();
   const seenEmail = new Map<string, string>();
-  const seenNombre = new Map<string, string>();
+  const seenPhone = new Map<string, string>();
   const groups = new Map<string, string[]>();
 
   for (const lead of sorted) {
-    const ig = normalize(lead.instagram);
-    const email = normalize(lead.email);
-    const nombre = normalize(lead.nombre);
+    let ig = normalize(lead.instagram);
+    let email = normalize(lead.email);
+    let phone = phoneKey(lead.telefono);
+    if (ig && (igCounts.get(ig) ?? 0) > MAX_SHARED) ig = "";
+    if (email && (emailCounts.get(email) ?? 0) > MAX_SHARED) email = "";
+    if (phone && (phoneCounts.get(phone) ?? 0) > MAX_SHARED) phone = "";
 
     const primaryId =
       (ig && seenIg.get(ig)) ||
       (email && seenEmail.get(email)) ||
-      (nombre && seenNombre.get(nombre));
+      (phone && seenPhone.get(phone));
 
     if (primaryId) {
       const group = groups.get(primaryId) ?? [];
@@ -31,7 +65,7 @@ function findDuplicateGroups(leads: Lead[]): { primaryId: string; duplicateIds: 
     } else {
       if (ig) seenIg.set(ig, lead.id);
       if (email) seenEmail.set(email, lead.id);
-      if (nombre) seenNombre.set(nombre, lead.id);
+      if (phone) seenPhone.set(phone, lead.id);
     }
   }
 
@@ -42,7 +76,9 @@ function findDuplicateGroups(leads: Lead[]): { primaryId: string; duplicateIds: 
 function mergeLeadInto(primary: Lead, dup: Lead): Partial<Lead> {
   const patch: Partial<Lead> = {};
 
-  if (!primary.nombre.trim() && dup.nombre.trim()) patch.nombre = dup.nombre;
+  if (isJunkName(primary.nombre, primary.telefono) && !isJunkName(dup.nombre, dup.telefono)) {
+    patch.nombre = dup.nombre;
+  }
   if (!primary.empresa.trim() && dup.empresa.trim()) patch.empresa = dup.empresa;
   if (!primary.email.trim() && dup.email.trim()) patch.email = dup.email;
   if (!primary.telefono.trim() && dup.telefono.trim()) patch.telefono = dup.telefono;

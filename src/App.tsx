@@ -224,7 +224,7 @@ export default function App() {
               type="button"
               className="btn btn-ghost"
               onClick={handleDeduplicate}
-              title="Detecta leads duplicados por nombre, Instagram o email y fusiona su información en el más antiguo"
+              title="Detecta leads duplicados por teléfono, Instagram o email y fusiona su información en el más antiguo"
             >
               Deduplicar
             </button>
