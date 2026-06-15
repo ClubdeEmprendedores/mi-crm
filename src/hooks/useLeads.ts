@@ -153,15 +153,22 @@ export function useLeads() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase
-      .from("leads")
-      .select("*")
-      .order("creado_en", { ascending: false })
-      .then(({ data, error: err }) => {
-        if (err) setError(err.message);
-        else setLeads((data as DbRow[]).map(fromDb));
-        setLoading(false);
-      });
+    (async () => {
+      const PAGE = 1000;
+      const all: DbRow[] = [];
+      for (let offset = 0; ; offset += PAGE) {
+        const { data, error: err } = await supabase
+          .from("leads")
+          .select("*")
+          .order("creado_en", { ascending: false })
+          .range(offset, offset + PAGE - 1);
+        if (err) { setError(err.message); break; }
+        all.push(...(data as DbRow[]));
+        if (!data || data.length < PAGE) break;
+      }
+      setLeads(all.map(fromDb));
+      setLoading(false);
+    })();
   }, []);
 
   const addLead = useCallback(
