@@ -1,34 +1,85 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { HistorialEntry, Lead, PropuestaOption, SedeOption, Stage } from "../types";
+import { mergeHistorial } from "../utils/mergeHistorial";
 
 function normalize(s: string) {
   return s.trim().toLowerCase().replace(/\s+/g, " ").normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-function findDuplicateIds(leads: Lead[]): string[] {
+function findDuplicateGroups(leads: Lead[]): { primaryId: string; duplicateIds: string[] }[] {
   const sorted = [...leads].sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
-  const seenIg = new Set<string>();
-  const seenEmail = new Set<string>();
-  const seenNombre = new Set<string>();
-  const toDelete: string[] = [];
+  const seenIg = new Map<string, string>();
+  const seenEmail = new Map<string, string>();
+  const seenNombre = new Map<string, string>();
+  const groups = new Map<string, string[]>();
+
   for (const lead of sorted) {
     const ig = normalize(lead.instagram);
     const email = normalize(lead.email);
     const nombre = normalize(lead.nombre);
-    const isDuplicate =
-      (ig && seenIg.has(ig)) ||
-      (email && seenEmail.has(email)) ||
-      (nombre && seenNombre.has(nombre));
-    if (isDuplicate) {
-      toDelete.push(lead.id);
+
+    const primaryId =
+      (ig && seenIg.get(ig)) ||
+      (email && seenEmail.get(email)) ||
+      (nombre && seenNombre.get(nombre));
+
+    if (primaryId) {
+      const group = groups.get(primaryId) ?? [];
+      group.push(lead.id);
+      groups.set(primaryId, group);
     } else {
-      if (ig) seenIg.add(ig);
-      if (email) seenEmail.add(email);
-      if (nombre) seenNombre.add(nombre);
+      if (ig) seenIg.set(ig, lead.id);
+      if (email) seenEmail.set(email, lead.id);
+      if (nombre) seenNombre.set(nombre, lead.id);
     }
   }
-  return toDelete;
+
+  return [...groups.entries()].map(([primaryId, duplicateIds]) => ({ primaryId, duplicateIds }));
+}
+
+/** Calcula los campos a copiar de `dup` hacia `primary` sin perder información. */
+function mergeLeadInto(primary: Lead, dup: Lead): Partial<Lead> {
+  const patch: Partial<Lead> = {};
+
+  if (!primary.nombre.trim() && dup.nombre.trim()) patch.nombre = dup.nombre;
+  if (!primary.empresa.trim() && dup.empresa.trim()) patch.empresa = dup.empresa;
+  if (!primary.email.trim() && dup.email.trim()) patch.email = dup.email;
+  if (!primary.telefono.trim() && dup.telefono.trim()) patch.telefono = dup.telefono;
+  if (!primary.instagram.trim() && dup.instagram.trim()) patch.instagram = dup.instagram;
+  if (!primary.contactId && dup.contactId) patch.contactId = dup.contactId;
+
+  const notasA = primary.notas.trim();
+  const notasB = dup.notas.trim();
+  if (notasB && notasB !== notasA) {
+    patch.notas = notasA ? `${notasA}\n${notasB}` : notasB;
+  }
+
+  const tags = new Set([...primary.tags, ...dup.tags]);
+  if (tags.size !== primary.tags.length) patch.tags = [...tags];
+
+  const historial = mergeHistorial(primary.historial, dup.historial);
+  if (historial.length !== primary.historial.length) patch.historial = historial;
+
+  if (dup.ultimoMensajeEn && (!primary.ultimoMensajeEn || dup.ultimoMensajeEn > primary.ultimoMensajeEn)) {
+    patch.ultimoMensajeEn = dup.ultimoMensajeEn;
+  }
+
+  if (dup.noRecontactar && !primary.noRecontactar) patch.noRecontactar = true;
+  if (!primary.motivoBaja.trim() && dup.motivoBaja.trim()) patch.motivoBaja = dup.motivoBaja;
+
+  if (primary.etapa === "nuevo" && dup.etapa !== "nuevo") {
+    patch.etapa = dup.etapa;
+    if (dup.contactadoEn) patch.contactadoEn = dup.contactadoEn;
+    if (dup.propuesta) patch.propuesta = dup.propuesta;
+    if (dup.sede) patch.sede = dup.sede;
+  } else {
+    if (!primary.contactadoEn && dup.contactadoEn) patch.contactadoEn = dup.contactadoEn;
+    if (!primary.propuesta && dup.propuesta) patch.propuesta = dup.propuesta;
+    if (!primary.sede && dup.sede) patch.sede = dup.sede;
+  }
+
+  return patch;
 }
 
 type DbRow = {
@@ -195,16 +246,38 @@ export function useLeads() {
     return data.length;
   }, []);
 
-  const countDuplicates = useCallback(() => findDuplicateIds(leads).length, [leads]);
+  const countDuplicates = useCallback(
+    () => findDuplicateGroups(leads).reduce((sum, g) => sum + g.duplicateIds.length, 0),
+    [leads],
+  );
 
   const deduplicateLeads = useCallback(async (): Promise<number> => {
-    const toDelete = findDuplicateIds(leads);
+    const groups = findDuplicateGroups(leads);
+    if (groups.length === 0) return 0;
+    const leadById = new Map(leads.map((l) => [l.id, l]));
+    const toDelete: string[] = [];
+
+    for (const { primaryId, duplicateIds } of groups) {
+      let merged = leadById.get(primaryId);
+      if (!merged) continue;
+      let patch: Partial<Lead> = {};
+      for (const dupId of duplicateIds) {
+        const dup = leadById.get(dupId);
+        if (!dup) continue;
+        const dupPatch = mergeLeadInto(merged, dup);
+        patch = { ...patch, ...dupPatch };
+        merged = { ...merged, ...dupPatch };
+        toDelete.push(dupId);
+      }
+      if (Object.keys(patch).length > 0) await updateLead(primaryId, patch);
+    }
+
     if (toDelete.length === 0) return 0;
     const { error: err } = await supabase.from("leads").delete().in("id", toDelete);
     if (err) { setError(err.message); return 0; }
     setLeads((prev) => prev.filter((l) => !toDelete.includes(l.id)));
     return toDelete.length;
-  }, [leads]);
+  }, [leads, updateLead]);
 
   const deleteLeads = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;

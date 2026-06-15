@@ -142,9 +142,9 @@ export default function App() {
     const count = countDuplicates();
     if (count === 0) { setSuccessMsg("No se encontraron duplicados."); return; }
     const s = count === 1 ? "" : "s";
-    if (!window.confirm(`Se encontraron ${count} lead${s} duplicado${s}. ¿Eliminar? Se conservará el más antiguo de cada grupo.`)) return;
+    if (!window.confirm(`Se encontraron ${count} lead${s} duplicado${s}. Se fusionará su información (historial, notas, tags, etc.) en el lead más antiguo de cada grupo y se eliminarán los duplicados. ¿Continuar?`)) return;
     const deleted = await deduplicateLeads();
-    if (deleted > 0) setSuccessMsg(`Se eliminaron ${deleted} lead${deleted === 1 ? "" : "s"} duplicado${deleted === 1 ? "" : "s"}.`);
+    if (deleted > 0) setSuccessMsg(`Se fusionaron y eliminaron ${deleted} lead${deleted === 1 ? "" : "s"} duplicado${deleted === 1 ? "" : "s"}.`);
   };
 
   return (
@@ -224,7 +224,7 @@ export default function App() {
               type="button"
               className="btn btn-ghost"
               onClick={handleDeduplicate}
-              title="Detecta y elimina leads duplicados por nombre, Instagram o email"
+              title="Detecta leads duplicados por nombre, Instagram o email y fusiona su información en el más antiguo"
             >
               Deduplicar
             </button>
