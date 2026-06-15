@@ -5,8 +5,10 @@ import { parseVCard } from "../utils/parseVCard";
 import { parseWhatsAppChat } from "../utils/parseWhatsAppChat";
 import { parseInstagramDMs } from "../utils/parseInstagramDMs";
 import { parseWhatsAppExport } from "../utils/parseWhatsAppExport";
+import { parseWhatsAppHistorial } from "../utils/parseWhatsAppHistorial";
+import { phonesMatch } from "../utils/phone";
 
-type Tab = "excel" | "vcf" | "chat" | "instagram" | "whatsapp";
+type Tab = "excel" | "vcf" | "chat" | "instagram" | "whatsapp" | "historial";
 
 interface ParsedRow extends Partial<Lead> {
   _id: string;
@@ -14,8 +16,10 @@ interface ParsedRow extends Partial<Lead> {
 }
 
 interface Props {
+  leads: Lead[];
   onClose: () => void;
   onImport: (contacts: Partial<Lead>[]) => void;
+  onImportHistorial: (items: Partial<Lead>[]) => void;
 }
 
 const ACCEPT: Record<Tab, string> = {
@@ -24,6 +28,7 @@ const ACCEPT: Record<Tab, string> = {
   chat: ".txt",
   instagram: ".json",
   whatsapp: ".json",
+  historial: ".json",
 };
 
 const TAB_LABEL: Record<Tab, string> = {
@@ -32,9 +37,10 @@ const TAB_LABEL: Record<Tab, string> = {
   chat: "Chat WhatsApp (.txt)",
   instagram: "Instagram DMs (.json)",
   whatsapp: "WhatsApp (reconexión)",
+  historial: "Historial WhatsApp",
 };
 
-export function ImportModal({ onClose, onImport }: Props) {
+export function ImportModal({ leads, onClose, onImport, onImportHistorial }: Props) {
   const [tab, setTab] = useState<Tab>("excel");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [error, setError] = useState("");
@@ -63,6 +69,7 @@ export function ImportModal({ onClose, onImport }: Props) {
         if (tab === "excel") parsed = await parseExcelFile(file);
         else if (tab === "vcf") parsed = parseVCard(await file.text());
         else if (tab === "whatsapp") parsed = parseWhatsAppExport(await file.text());
+        else if (tab === "historial") parsed = parseWhatsAppHistorial(await file.text());
         else parsed = parseWhatsAppChat(await file.text());
       }
 
@@ -101,7 +108,9 @@ export function ImportModal({ onClose, onImport }: Props) {
 
   const doImport = () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onImport(selected.map(({ _id: _i, _sel: _s, ...rest }) => rest));
+    const items = selected.map(({ _id: _i, _sel: _s, ...rest }) => rest);
+    if (tab === "historial") onImportHistorial(items);
+    else onImport(items);
     onClose();
   };
 
@@ -160,6 +169,17 @@ export function ImportModal({ onClose, onImport }: Props) {
               <li>Con el bridge de WhatsApp corriendo, ejecutá <code>export_leads.py</code> en <code>whatsapp-bridge/</code></li>
               <li>Esto genera <code>whatsapp_leads.json</code> con los chats 1 a 1 (sin staff ni equipo CdE)</li>
               <li>Arrastrá ese archivo acá — quedan ordenados del más viejo al más reciente</li>
+            </ol>
+          </div>
+        )}
+
+        {tab === "historial" && rows.length === 0 && !loading && (
+          <div className="import-ig-guide">
+            <strong>Actualizar historial de conversaciones de WhatsApp:</strong>
+            <ol>
+              <li>Con el bridge de WhatsApp corriendo, ejecutá <code>export_historial.py</code> en <code>whatsapp-bridge/</code></li>
+              <li>Esto genera <code>whatsapp_historial.json</code> con los últimos mensajes de cada chat 1 a 1</li>
+              <li>Arrastrá ese archivo acá: los leads existentes se actualizan (sumando el historial sin duplicar) y los contactos nuevos se crean en "Nuevo"</li>
             </ol>
           </div>
         )}
@@ -229,7 +249,12 @@ export function ImportModal({ onClose, onImport }: Props) {
                     <th />
                     <th>Nombre</th>
                     <th>Teléfono</th>
-                    {tab === "whatsapp" ? <th>Notas</th> : (
+                    {tab === "historial" ? (
+                      <>
+                        <th>Mensajes</th>
+                        <th>Estado</th>
+                      </>
+                    ) : tab === "whatsapp" ? <th>Notas</th> : (
                       <>
                         <th>Email</th>
                         <th>Instagram</th>
@@ -254,7 +279,16 @@ export function ImportModal({ onClose, onImport }: Props) {
                       </td>
                       <td>{row.nombre || <span className="import-empty">—</span>}</td>
                       <td>{row.telefono || <span className="import-empty">—</span>}</td>
-                      {tab === "whatsapp" ? (
+                      {tab === "historial" ? (
+                        <>
+                          <td>{row.historial?.length ?? 0}</td>
+                          <td>
+                            {row.telefono && leads.some((l) => l.telefono && phonesMatch(l.telefono, row.telefono!))
+                              ? "Lead existente"
+                              : "Lead nuevo"}
+                          </td>
+                        </>
+                      ) : tab === "whatsapp" ? (
                         <td className="import-notas">{row.notas || <span className="import-empty">—</span>}</td>
                       ) : (
                         <>
@@ -281,8 +315,9 @@ export function ImportModal({ onClose, onImport }: Props) {
                 disabled={selected.length === 0}
                 onClick={doImport}
               >
-                Importar {selected.length} contacto
-                {selected.length !== 1 ? "s" : ""}
+                {tab === "historial"
+                  ? `Actualizar ${selected.length} lead${selected.length !== 1 ? "s" : ""}`
+                  : `Importar ${selected.length} contacto${selected.length !== 1 ? "s" : ""}`}
               </button>
             </div>
           </>

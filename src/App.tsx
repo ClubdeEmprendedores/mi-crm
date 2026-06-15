@@ -14,6 +14,8 @@ import {
   exportFullJson,
   exportLeadsCsv,
 } from "./utils/exportData";
+import { mergeHistorial } from "./utils/mergeHistorial";
+import { phonesMatch } from "./utils/phone";
 
 export default function App() {
   const {
@@ -112,6 +114,29 @@ export default function App() {
     (id: string) => updateLead(id, { ultimoMensajeEn: new Date().toISOString() }),
     [updateLead],
   );
+
+  const handleImportHistorial = async (items: Partial<Lead>[]) => {
+    let updated = 0;
+    const toCreate: Partial<Lead>[] = [];
+    for (const item of items) {
+      if (!item.telefono) continue;
+      const match = leads.find((l) => l.telefono && phonesMatch(l.telefono, item.telefono!));
+      if (match) {
+        const merged = mergeHistorial(match.historial, item.historial ?? []);
+        if (merged.length !== match.historial.length) {
+          await updateLead(match.id, { historial: merged });
+          updated++;
+        }
+      } else {
+        toCreate.push(item);
+      }
+    }
+    const created = toCreate.length > 0 ? (await addLeads(toCreate)) ?? 0 : 0;
+    setSuccessMsg(
+      `Historial actualizado: ${updated} lead${updated !== 1 ? "s" : ""} actualizado${updated !== 1 ? "s" : ""}, ` +
+      `${created} lead${created !== 1 ? "s" : ""} nuevo${created !== 1 ? "s" : ""} creado${created !== 1 ? "s" : ""}.`,
+    );
+  };
 
   const handleDeduplicate = async () => {
     const count = countDuplicates();
@@ -341,8 +366,10 @@ export default function App() {
       {/* Import modal */}
       {importing && (
         <ImportModal
+          leads={leads}
           onClose={() => setImporting(false)}
           onImport={(items) => addLeads(items)}
+          onImportHistorial={handleImportHistorial}
         />
       )}
 
