@@ -197,6 +197,7 @@ export function useLeads() {
           .from("leads")
           .select("*")
           .order("creado_en", { ascending: false })
+          .order("id", { ascending: true })
           .range(offset, offset + PAGE - 1);
         if (err) { setError(err.message); break; }
         all.push(...(data as DbRow[]));
