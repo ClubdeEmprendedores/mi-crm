@@ -320,8 +320,12 @@ export function useLeads() {
     }
 
     if (toDelete.length === 0) return 0;
-    const { error: err } = await supabase.from("leads").delete().in("id", toDelete);
-    if (err) { setError(err.message); return 0; }
+    const CHUNK = 150;
+    for (let i = 0; i < toDelete.length; i += CHUNK) {
+      const slice = toDelete.slice(i, i + CHUNK);
+      const { error: err } = await supabase.from("leads").delete().in("id", slice);
+      if (err) { setError(err.message); return i; }
+    }
     setLeads((prev) => prev.filter((l) => !toDelete.includes(l.id)));
     return toDelete.length;
   }, [leads, updateLead]);
