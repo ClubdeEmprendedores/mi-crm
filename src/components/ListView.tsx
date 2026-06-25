@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type { Lead, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
 import { normalizeSearch } from "../utils/text";
-import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
+import { mensajeReconexion, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
 
 type Props = {
@@ -185,7 +185,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
                 {lead.telefono && (
                   <a
                     className="lead-card-whatsapp list-wa"
-                    href={whatsappUrl(lead.telefono, sanTelmoReconexionMensaje(lead.nombre))}
+                    href={whatsappUrl(lead.telefono, mensajeReconexion(lead))}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => onSendWhatsapp(lead.id)}

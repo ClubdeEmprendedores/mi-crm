@@ -5,7 +5,7 @@ import { useEscapeKey } from "../hooks/useEscapeKey";
 import { formatDate, formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 import { normalizeSearch } from "../utils/text";
-import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
+import { mensajeReconexion, whatsappUrl } from "../utils/whatsapp";
 
 type Props = {
   lead: Lead | null;
@@ -98,7 +98,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
         tags: lead.tags ?? [],
         historial: lead.historial ?? [],
       });
-      setWaMessage(sanTelmoReconexionMensaje(lead.nombre));
+      setWaMessage(mensajeReconexion(lead));
       setLastSent(lead.ultimoMensajeEn);
     } else {
       setForm(empty);

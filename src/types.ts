@@ -57,7 +57,7 @@ export const STAGE_LABELS: Record<Stage, string> = {
   propuesta: "Propuesta",
   ganado: "Miembro",
   exmiembro: "Ex-miembro",
-  perdido: "Perdido",
+  perdido: "No Apto",
 };
 
 export const STAGE_COLORS: Record<Stage, string> = {

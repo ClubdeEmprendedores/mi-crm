@@ -1,7 +1,7 @@
 import type { Lead } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS } from "../types";
 import { formatShortDate } from "../utils/format";
-import { sanTelmoReconexionMensaje, whatsappUrl } from "../utils/whatsapp";
+import { mensajeReconexion, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
 
 type Props = {
@@ -32,7 +32,7 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp
       {lead.telefono && (
         <a
           className="lead-card-whatsapp"
-          href={whatsappUrl(lead.telefono, sanTelmoReconexionMensaje(lead.nombre))}
+          href={whatsappUrl(lead.telefono, mensajeReconexion(lead))}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => {
