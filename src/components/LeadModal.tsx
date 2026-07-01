@@ -5,7 +5,7 @@ import { useEscapeKey } from "../hooks/useEscapeKey";
 import { formatDate, formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 import { normalizeSearch } from "../utils/text";
-import { mensajeReconexion, whatsappUrl } from "../utils/whatsapp";
+import { mensajeReconexion, reporteEnviadoMensaje, whatsappUrl } from "../utils/whatsapp";
 
 type Props = {
   lead: Lead | null;
@@ -339,6 +339,15 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
             {form.telefono && (
               <div className="whatsapp-box">
                 <span className="field-label">Enviar WhatsApp</span>
+                {form.etapa === "ganado" && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm whatsapp-template-btn"
+                    onClick={() => setWaMessage(reporteEnviadoMensaje(form.nombre))}
+                  >
+                    Usar mensaje: reporte enviado por mail
+                  </button>
+                )}
                 <textarea
                   rows={3}
                   value={waMessage}

@@ -49,7 +49,14 @@ export type Contact = {
   creadoEn: string;
 };
 
-export type ViewMode = "kanban" | "lista" | "contactos";
+export type Task = {
+  id: string;
+  texto: string;
+  hecha: boolean;
+  creadoEn: string;
+};
+
+export type ViewMode = "kanban" | "lista" | "contactos" | "tareas";
 
 export const STAGE_LABELS: Record<Stage, string> = {
   nuevo: "Nuevo",

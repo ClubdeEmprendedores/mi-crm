@@ -16,6 +16,7 @@ type Props = {
 };
 
 type SortMode = "recientes" | "recontactar";
+type StageFilter = Stage | "todas";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-AR", {
@@ -28,8 +29,11 @@ function formatDate(iso: string) {
 export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, onSelectAll, onSendWhatsapp }: Props) {
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("recientes");
+  const [stageFilter, setStageFilter] = useState<StageFilter>("todas");
 
-  const sorted = [...leads].sort((a, b) => {
+  const byStage = stageFilter === "todas" ? leads : leads.filter((l) => l.etapa === stageFilter);
+
+  const sorted = [...byStage].sort((a, b) => {
     if (sortMode === "recontactar") {
       const at = a.ultimoMensajeEn ? new Date(a.ultimoMensajeEn).getTime() : -1;
       const bt = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : -1;
@@ -62,7 +66,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
     headerCheckRef.current.indeterminate = someSelected && !allSelected;
   }
 
-  if (sorted.length === 0) {
+  if (leads.length === 0) {
     return (
       <div className="list-empty">
         <p>No hay leads todavía.</p>
@@ -83,6 +87,17 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
         />
         <select
           className="list-sort-select"
+          value={stageFilter}
+          onChange={(e) => setStageFilter(e.target.value as StageFilter)}
+          title="Filtrar por etapa"
+        >
+          <option value="todas">Todas las etapas</option>
+          {STAGES.map((s) => (
+            <option key={s} value={s}>{STAGE_LABELS[s]}</option>
+          ))}
+        </select>
+        <select
+          className="list-sort-select"
           value={sortMode}
           onChange={(e) => setSortMode(e.target.value as SortMode)}
           title="Ordenar"
@@ -91,13 +106,15 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
           <option value="recontactar">Para recontactar</option>
         </select>
         <span className="contacts-count">
-          {filtered.length !== sorted.length
-            ? `${filtered.length} de ${sorted.length}`
+          {filtered.length !== leads.length
+            ? `${filtered.length} de ${leads.length}`
             : `${sorted.length} lead${sorted.length !== 1 ? "s" : ""}`}
         </span>
       </div>
       {filtered.length === 0 ? (
-        <p className="list-empty-hint">No se encontraron leads para "{search}".</p>
+        <p className="list-empty-hint">
+          {search ? `No se encontraron leads para "${search}".` : "Sin leads en esta etapa."}
+        </p>
       ) : (
       <table className="list-table">
         <thead>

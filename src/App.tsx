@@ -6,8 +6,11 @@ import { ImportModal } from "./components/ImportModal";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { LeadModal } from "./components/LeadModal";
 import { ListView } from "./components/ListView";
+import { ReporteMensualModal } from "./components/ReporteMensualModal";
+import { TasksView } from "./components/TasksView";
 import { useContacts } from "./hooks/useContacts";
 import { useLeads } from "./hooks/useLeads";
+import { useTasks } from "./hooks/useTasks";
 import type { Contact, Lead, ViewMode } from "./types";
 import {
   exportContactsCsv,
@@ -27,6 +30,10 @@ export default function App() {
     contacts, loading: contactsLoading, error: contactsError, clearError: clearContactsError,
     addContact, updateContact, deleteContact,
   } = useContacts();
+  const {
+    tasks, loading: tasksLoading, error: tasksError, clearError: clearTasksError,
+    addTask, toggleTask, deleteTask,
+  } = useTasks();
 
   const [view, setView] = useState<ViewMode>("kanban");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -34,12 +41,19 @@ export default function App() {
   const [editingContact, setEditingContact] = useState<Contact | null | undefined>(undefined);
   const [importing, setImporting] = useState(false);
   const [campaignOpen, setCampaignOpen] = useState(false);
+  const [reporteOpen, setReporteOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const appError = leadsError || contactsError;
-  const clearError = () => { clearLeadsError(); clearContactsError(); };
+  const isTasksMigrationError = !!tasksError && (
+    tasksError.toLowerCase().includes("does not exist") ||
+    tasksError.toLowerCase().includes("no existe") ||
+    tasksError.toLowerCase().includes("could not find the table") ||
+    tasksError.toLowerCase().includes("schema cache")
+  );
+  const appError = leadsError || contactsError || (isTasksMigrationError ? null : tasksError);
+  const clearError = () => { clearLeadsError(); clearContactsError(); clearTasksError(); };
 
   // Auto-dismiss error toast after 6s
   useEffect(() => {
@@ -76,6 +90,7 @@ export default function App() {
   const closeContactModal = () => setEditingContact(undefined);
 
   const isContactsView = view === "contactos";
+  const isTasksView = view === "tareas";
 
   const handleViewChange = (v: ViewMode) => {
     setView(v);
@@ -186,79 +201,101 @@ export default function App() {
           >
             Contactos
           </button>
-        </div>
-
-        <div className="header-actions">
-          <div className="export-wrap" ref={exportRef}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setExportOpen((o) => !o)}
-            >
-              Exportar ▾
-            </button>
-            {exportOpen && (
-              <div className="export-dropdown">
-                <button
-                  onClick={() => { exportLeadsCsv(leads); setExportOpen(false); }}
-                >
-                  CSV — Leads
-                </button>
-                <button
-                  onClick={() => { exportContactsCsv(contacts); setExportOpen(false); }}
-                >
-                  CSV — Contactos
-                </button>
-                <div className="export-dropdown-divider" />
-                <button
-                  onClick={() => { exportFullJson(leads, contacts); setExportOpen(false); }}
-                >
-                  JSON — Backup completo
-                </button>
-              </div>
-            )}
-          </div>
-
-          {!isContactsView && (
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={handleDeduplicate}
-              title="Detecta leads duplicados por teléfono, Instagram o email y fusiona su información en el más antiguo"
-            >
-              Deduplicar
-            </button>
-          )}
-
           <button
             type="button"
-            className="btn btn-secondary"
-            onClick={() => setImporting(true)}
+            role="tab"
+            aria-selected={view === "tareas"}
+            className={view === "tareas" ? "active" : ""}
+            onClick={() => handleViewChange("tareas")}
           >
-            Importar
+            Tareas
           </button>
+        </div>
 
-          {!isContactsView && (
+        {!isTasksView && (
+          <div className="header-actions">
+            <div className="export-wrap" ref={exportRef}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setExportOpen((o) => !o)}
+              >
+                Exportar ▾
+              </button>
+              {exportOpen && (
+                <div className="export-dropdown">
+                  <button
+                    onClick={() => { exportLeadsCsv(leads); setExportOpen(false); }}
+                  >
+                    CSV — Leads
+                  </button>
+                  <button
+                    onClick={() => { exportContactsCsv(contacts); setExportOpen(false); }}
+                  >
+                    CSV — Contactos
+                  </button>
+                  <div className="export-dropdown-divider" />
+                  <button
+                    onClick={() => { exportFullJson(leads, contacts); setExportOpen(false); }}
+                  >
+                    JSON — Backup completo
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {!isContactsView && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={handleDeduplicate}
+                title="Detecta leads duplicados por teléfono, Instagram o email y fusiona su información en el más antiguo"
+              >
+                Deduplicar
+              </button>
+            )}
+
             <button
               type="button"
               className="btn btn-secondary"
-              onClick={() => setCampaignOpen(true)}
-              title="Leads que pidieron una sede en Capital y todavía no se les contó de San Telmo"
+              onClick={() => setImporting(true)}
             >
-              📍 Reconexión
+              Importar
             </button>
-          )}
 
-          {isContactsView ? (
-            <button type="button" className="btn btn-primary" onClick={openNewContact}>
-              + Nuevo contacto
-            </button>
-          ) : (
-            <button type="button" className="btn btn-primary" onClick={openNew}>
-              + Nuevo lead
-            </button>
-          )}
-        </div>
+            {!isContactsView && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setCampaignOpen(true)}
+                title="Leads que pidieron una sede en Capital y todavía no se les contó de San Telmo"
+              >
+                📍 Reconexión
+              </button>
+            )}
+
+            {!isContactsView && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setReporteOpen(true)}
+                title="Miembros activos con su mail y datos del mes, para mandarles el reporte por mail y avisarles por WhatsApp"
+              >
+                📊 Reporte mensual
+              </button>
+            )}
+
+            {isContactsView ? (
+              <button type="button" className="btn btn-primary" onClick={openNewContact}>
+                + Nuevo contacto
+              </button>
+            ) : (
+              <button type="button" className="btn btn-primary" onClick={openNew}>
+                + Nuevo lead
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       {selectedIds.size > 0 && (
@@ -276,7 +313,16 @@ export default function App() {
       )}
 
       <main className="app-main">
-        {loading && !isContactsView ? (
+        {view === "tareas" ? (
+          <TasksView
+            tasks={tasks}
+            loading={tasksLoading}
+            error={tasksError}
+            onAdd={addTask}
+            onToggle={toggleTask}
+            onDelete={deleteTask}
+          />
+        ) : loading && !isContactsView ? (
           <div className="app-loading">Cargando leads…</div>
         ) : view === "kanban" ? (
           <KanbanBoard leads={leads} onMove={moveLead} onEdit={openEdit} onSendWhatsapp={markMessaged} />
@@ -379,6 +425,16 @@ export default function App() {
           leads={leads}
           onClose={() => setCampaignOpen(false)}
           onApplyTag={(id, tags) => updateLead(id, { tags })}
+          onSendWhatsapp={markMessaged}
+        />
+      )}
+
+      {/* Monthly report modal */}
+      {reporteOpen && (
+        <ReporteMensualModal
+          leads={leads}
+          onClose={() => setReporteOpen(false)}
+          onUpdateLead={updateLead}
           onSendWhatsapp={markMessaged}
         />
       )}

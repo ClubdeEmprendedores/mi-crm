@@ -41,3 +41,9 @@ export function mensajeReconexion(lead: { nombre: string; tags: string[] }): str
   if (lead.tags.includes(RECONTACTO_FRIO_TAG)) return recontactoFrioMensaje(lead.nombre);
   return defaultReconexionMensaje(lead.nombre);
 }
+
+export function reporteEnviadoMensaje(nombre: string): string {
+  const primerNombre = nombre.trim().split(/\s+/)[0] || "";
+  const saludo = primerNombre ? `Hola ${primerNombre},` : "Hola,";
+  return `${saludo} te enviamos por mail el reporte de ventas. Acá estoy por cualquier comentario o duda. ¡Gracias!`;
+}
