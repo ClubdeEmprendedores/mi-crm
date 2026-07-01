@@ -1,7 +1,6 @@
 export const STAGES = [
   "nuevo",
   "contactado",
-  "propuesta",
   "ganado",
   "exmiembro",
   "perdido",
@@ -61,7 +60,6 @@ export type ViewMode = "kanban" | "lista" | "contactos" | "tareas";
 export const STAGE_LABELS: Record<Stage, string> = {
   nuevo: "Nuevo",
   contactado: "Contactado",
-  propuesta: "Propuesta",
   ganado: "Miembro",
   exmiembro: "Ex-miembro",
   perdido: "No Apto",
@@ -70,7 +68,6 @@ export const STAGE_LABELS: Record<Stage, string> = {
 export const STAGE_COLORS: Record<Stage, string> = {
   nuevo: "#FFB300",
   contactado: "#FFC933",
-  propuesta: "#E6A800",
   ganado: "#FFE566",
   exmiembro: "#8b95a5",
   perdido: "#b45309",

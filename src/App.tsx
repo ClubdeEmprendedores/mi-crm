@@ -325,7 +325,14 @@ export default function App() {
         ) : loading && !isContactsView ? (
           <div className="app-loading">Cargando leads…</div>
         ) : view === "kanban" ? (
-          <KanbanBoard leads={leads} onMove={moveLead} onEdit={openEdit} onSendWhatsapp={markMessaged} />
+          <KanbanBoard
+            leads={leads}
+            onMove={moveLead}
+            onEdit={openEdit}
+            onSendWhatsapp={markMessaged}
+            tasks={tasks}
+            onToggleTask={toggleTask}
+          />
         ) : view === "lista" ? (
           <ListView
           leads={leads}
