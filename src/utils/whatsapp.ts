@@ -47,3 +47,12 @@ export function reporteEnviadoMensaje(nombre: string): string {
   const saludo = primerNombre ? `Hola ${primerNombre},` : "Hola,";
   return `${saludo} te enviamos por mail el reporte de ventas. Acá estoy por cualquier comentario o duda. ¡Gracias!`;
 }
+
+export function primerNombre(nombre: string): string {
+  return nombre.trim().split(/\s+/)[0] || "";
+}
+
+/** Reemplaza {nombre} en una plantilla de mensaje por el primer nombre del lead. */
+export function aplicarPlantilla(plantilla: string, nombre: string): string {
+  return plantilla.replace(/\{nombre\}/gi, primerNombre(nombre));
+}

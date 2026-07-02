@@ -1,0 +1,241 @@
+import { useMemo, useState } from "react";
+import type { Lead, Stage } from "../types";
+import { STAGES, STAGE_LABELS } from "../types";
+import { useEscapeKey } from "../hooks/useEscapeKey";
+import { formatShortDate } from "../utils/format";
+import { normalizeSearch } from "../utils/text";
+import { aplicarPlantilla, whatsappUrl } from "../utils/whatsapp";
+
+type Props = {
+  leads: Lead[];
+  onClose: () => void;
+  onApplyTag: (id: string, tags: string[]) => void;
+  onSendWhatsapp: (id: string) => void;
+};
+
+const DEFAULT_STAGES: Stage[] = ["nuevo", "contactado"];
+const PREVIEW_LIMIT = 150;
+
+function todayTag() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
+  return `📣 Campaña ${dd}-${mm}`;
+}
+
+export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }: Props) {
+  useEscapeKey(onClose);
+
+  const [stageFilter, setStageFilter] = useState<Set<Stage>>(new Set(DEFAULT_STAGES));
+  const [soloFrios, setSoloFrios] = useState(true);
+  const [diasFrio, setDiasFrio] = useState(14);
+  const [excludeTagged, setExcludeTagged] = useState(true);
+  const [search, setSearch] = useState("");
+  const [tag, setTag] = useState(todayTag());
+  const [mensaje, setMensaje] = useState(
+    "¡Hola {nombre}! Soy Mati, de Club de Emprendedores. ¿Cómo va tu emprendimiento? Te cuento cómo podés tener tu espacio en nuestro showroom.",
+  );
+  const [sent, setSent] = useState<Set<string>>(new Set());
+
+  const toggleStage = (s: Stage) => {
+    setStageFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s); else next.add(s);
+      return next;
+    });
+  };
+
+  const matched = useMemo(() => {
+    const q = normalizeSearch(search.trim());
+    const cutoff = Date.now() - diasFrio * 24 * 60 * 60 * 1000;
+    return leads
+      .filter((l) => {
+        if (!l.telefono) return false;
+        if (l.noRecontactar) return false;
+        if (!stageFilter.has(l.etapa)) return false;
+        if (excludeTagged && tag && l.tags.includes(tag)) return false;
+        if (soloFrios) {
+          const last = l.ultimoMensajeEn ? new Date(l.ultimoMensajeEn).getTime() : null;
+          if (last !== null && last >= cutoff) return false;
+        }
+        if (q) {
+          const hay =
+            normalizeSearch(l.nombre).includes(q) ||
+            normalizeSearch(l.empresa).includes(q) ||
+            normalizeSearch(l.instagram).includes(q) ||
+            l.tags.some((t) => normalizeSearch(t).includes(q));
+          if (!hay) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const at = a.ultimoMensajeEn ? new Date(a.ultimoMensajeEn).getTime() : -1;
+        const bt = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : -1;
+        return at - bt;
+      });
+  }, [leads, stageFilter, soloFrios, diasFrio, excludeTagged, tag, search]);
+
+  const shown = matched.slice(0, PREVIEW_LIMIT);
+
+  const handleSend = (lead: Lead) => {
+    onSendWhatsapp(lead.id);
+    if (tag.trim() && !lead.tags.includes(tag.trim())) {
+      onApplyTag(lead.id, [...lead.tags, tag.trim()]);
+    }
+    setSent((prev) => new Set(prev).add(lead.id));
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose} role="presentation">
+      <div
+        className="modal campaign-modal reporte-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-labelledby="retargeting-title"
+      >
+        <header className="modal-header">
+          <h2 id="retargeting-title">Campaña de retargeting</h2>
+          <div className="modal-header-actions">
+            <button type="button" className="btn-icon" onClick={onClose} aria-label="Cerrar">
+              ✕
+            </button>
+          </div>
+        </header>
+
+        <div className="campaign-body">
+          <p className="campaign-intro">
+            Elegí a quién apuntar y qué mensaje mandarles. Cada envío marca al lead como
+            contactado y le aplica la etiqueta, así no se repite en la próxima campaña.
+          </p>
+
+          <div className="retargeting-filters">
+            <div>
+              <span className="field-label">Etapas incluidas</span>
+              <div className="retargeting-stage-checks">
+                {STAGES.map((s) => (
+                  <label key={s} className="field-checkbox field-checkbox--inline">
+                    <input
+                      type="checkbox"
+                      checked={stageFilter.has(s)}
+                      onChange={() => toggleStage(s)}
+                    />
+                    {STAGE_LABELS[s]}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label className="field-checkbox">
+              <input
+                type="checkbox"
+                checked={soloFrios}
+                onChange={(e) => setSoloFrios(e.target.checked)}
+              />
+              Solo fríos: nunca contactados o sin mensaje hace más de
+              <input
+                type="number"
+                min={1}
+                className="retargeting-days-input"
+                value={diasFrio}
+                onChange={(e) => setDiasFrio(Number(e.target.value) || 1)}
+                disabled={!soloFrios}
+              />
+              días
+            </label>
+
+            <label className="field-checkbox">
+              <input
+                type="checkbox"
+                checked={excludeTagged}
+                onChange={(e) => setExcludeTagged(e.target.checked)}
+              />
+              Excluir leads que ya tienen la etiqueta de esta campaña
+            </label>
+
+            <label className="campaign-tag-label">
+              Buscar dentro del filtro (nombre, empresa, instagram, tag)
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="opcional" />
+            </label>
+
+            <label className="campaign-tag-label">
+              Etiqueta a aplicar al enviar
+              <input value={tag} onChange={(e) => setTag(e.target.value)} />
+            </label>
+
+            <label className="campaign-tag-label">
+              Mensaje (usá {"{nombre}"} para el nombre de pila)
+              <textarea rows={3} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
+            </label>
+          </div>
+
+          <div className="import-table-wrap campaign-table-wrap">
+            <table className="import-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Etapa</th>
+                  <th>Etiquetas</th>
+                  <th>Último mensaje</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((lead) => (
+                  <tr key={lead.id}>
+                    <td className="list-name">{lead.nombre}</td>
+                    <td>{STAGE_LABELS[lead.etapa]}</td>
+                    <td>
+                      {lead.tags.length > 0 ? (
+                        <div className="lead-card-tags">
+                          {lead.tags.map((t) => (
+                            <span key={t} className="lead-card-tag">{t}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="import-empty">—</span>
+                      )}
+                    </td>
+                    <td>{lead.ultimoMensajeEn ? formatShortDate(lead.ultimoMensajeEn) : "Nunca"}</td>
+                    <td>
+                      <a
+                        className="lead-card-whatsapp campaign-wa"
+                        href={whatsappUrl(lead.telefono, aplicarPlantilla(mensaje, lead.nombre))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleSend(lead)}
+                        title="Enviar WhatsApp"
+                        aria-label="Enviar WhatsApp"
+                      >
+                        {sent.has(lead.id) ? "✅" : "💬"}
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+                {shown.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="import-empty" style={{ textAlign: "center", padding: "1rem" }}>
+                      Sin leads que cumplan estos filtros.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <footer className="modal-footer">
+          <span className="campaign-summary">
+            {matched.length} lead{matched.length !== 1 ? "s" : ""} en el filtro
+            {matched.length > PREVIEW_LIMIT && ` · mostrando los primeros ${PREVIEW_LIMIT}`}
+            {sent.size > 0 && ` · ${sent.size} enviados en esta sesión`}
+          </span>
+          <div className="modal-footer-right">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
+              Cerrar
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}

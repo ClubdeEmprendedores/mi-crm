@@ -1,6 +1,7 @@
 {
   "crons": [
-    { "path": "/api/keepalive", "schedule": "0 12 * * *" }
+    { "path": "/api/keepalive", "schedule": "0 12 * * *" },
+    { "path": "/api/reminder-check", "schedule": "0 13 * * *" }
   ],
   "functions": {
     "api/send-report-emails.js": { "maxDuration": 60 }

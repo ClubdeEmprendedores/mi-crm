@@ -137,6 +137,7 @@ type DbRow = {
   tags: string[] | null;
   ultimo_mensaje_en: string | null;
   historial: HistorialEntry[] | null;
+  prioridad: boolean | null;
 };
 
 function fromDb(row: DbRow): Lead {
@@ -159,6 +160,7 @@ function fromDb(row: DbRow): Lead {
     tags: row.tags ?? [],
     ultimoMensajeEn: row.ultimo_mensaje_en ?? undefined,
     historial: row.historial ?? [],
+    prioridad: row.prioridad ?? false,
   };
 }
 
@@ -180,6 +182,7 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.tags !== undefined) row.tags = patch.tags;
   if (patch.ultimoMensajeEn !== undefined) row.ultimo_mensaje_en = patch.ultimoMensajeEn || null;
   if (patch.historial !== undefined) row.historial = patch.historial;
+  if (patch.prioridad !== undefined) row.prioridad = patch.prioridad;
   return row;
 }
 

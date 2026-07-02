@@ -28,6 +28,7 @@ type Props = {
     noRecontactar: boolean;
     tags: string[];
     historial: HistorialEntry[];
+    prioridad: boolean;
   }) => void;
   onDelete?: () => void;
 };
@@ -58,6 +59,7 @@ const empty = {
   noRecontactar: false,
   tags: [] as string[],
   historial: [] as HistorialEntry[],
+  prioridad: false,
 };
 
 const FORM_ID = "lead-form";
@@ -97,6 +99,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
         noRecontactar: lead.noRecontactar,
         tags: lead.tags ?? [],
         historial: lead.historial ?? [],
+        prioridad: lead.prioridad,
       });
       setWaMessage(mensajeReconexion(lead));
       setLastSent(lead.ultimoMensajeEn);
@@ -170,6 +173,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
       noRecontactar: form.noRecontactar,
       tags: form.tags,
       historial: form.historial,
+      prioridad: form.prioridad,
     });
     onClose();
   };
@@ -205,6 +209,15 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
         <header className="modal-header">
           <h2 id="modal-title">{lead ? "Editar lead" : "Nuevo lead"}</h2>
           <div className="modal-header-actions">
+            <button
+              type="button"
+              className={`btn-icon btn-icon--star ${form.prioridad ? "btn-icon--star-active" : ""}`}
+              onClick={() => setForm({ ...form, prioridad: !form.prioridad })}
+              aria-label={form.prioridad ? "Quitar destacado" : "Marcar como destacado"}
+              title={form.prioridad ? "Quitar destacado" : "Marcar como destacado"}
+            >
+              {form.prioridad ? "★" : "☆"}
+            </button>
             <button
               type="submit"
               form={FORM_ID}

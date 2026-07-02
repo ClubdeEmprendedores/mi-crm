@@ -6,7 +6,9 @@ import { ImportModal } from "./components/ImportModal";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { LeadModal } from "./components/LeadModal";
 import { ListView } from "./components/ListView";
+import { MetricsView } from "./components/MetricsView";
 import { ReporteMensualModal } from "./components/ReporteMensualModal";
+import { RetargetingModal } from "./components/RetargetingModal";
 import { TasksView } from "./components/TasksView";
 import { useContacts } from "./hooks/useContacts";
 import { useLeads } from "./hooks/useLeads";
@@ -42,6 +44,7 @@ export default function App() {
   const [importing, setImporting] = useState(false);
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [reporteOpen, setReporteOpen] = useState(false);
+  const [retargetingOpen, setRetargetingOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -83,6 +86,10 @@ export default function App() {
 
   const openNew = () => setEditing(null);
   const openEdit = (lead: Lead) => setEditing(lead);
+  const openLeadById = (leadId: string) => {
+    const lead = leads.find((l) => l.id === leadId);
+    if (lead) setEditing(lead);
+  };
   const closeModal = () => setEditing(undefined);
 
   const openNewContact = () => setEditingContact(null);
@@ -91,6 +98,7 @@ export default function App() {
 
   const isContactsView = view === "contactos";
   const isTasksView = view === "tareas";
+  const isMetricsView = view === "metricas";
 
   const handleViewChange = (v: ViewMode) => {
     setView(v);
@@ -210,9 +218,18 @@ export default function App() {
           >
             Tareas
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "metricas"}
+            className={view === "metricas" ? "active" : ""}
+            onClick={() => handleViewChange("metricas")}
+          >
+            Métricas
+          </button>
         </div>
 
-        {!isTasksView && (
+        {!isTasksView && !isMetricsView && (
           <div className="header-actions">
             <div className="export-wrap" ref={exportRef}>
               <button
@@ -285,6 +302,17 @@ export default function App() {
               </button>
             )}
 
+            {!isContactsView && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setRetargetingOpen(true)}
+                title="Armá una campaña filtrando leads por etapa y antigüedad de contacto"
+              >
+                📢 Campaña
+              </button>
+            )}
+
             {isContactsView ? (
               <button type="button" className="btn btn-primary" onClick={openNewContact}>
                 + Nuevo contacto
@@ -313,7 +341,9 @@ export default function App() {
       )}
 
       <main className="app-main">
-        {view === "tareas" ? (
+        {view === "metricas" ? (
+          <MetricsView leads={leads} />
+        ) : view === "tareas" ? (
           <TasksView
             tasks={tasks}
             loading={tasksLoading}
@@ -321,6 +351,7 @@ export default function App() {
             onAdd={addTask}
             onToggle={toggleTask}
             onDelete={deleteTask}
+            onOpenLead={openLeadById}
           />
         ) : loading && !isContactsView ? (
           <div className="app-loading">Cargando leads…</div>
@@ -330,8 +361,10 @@ export default function App() {
             onMove={moveLead}
             onEdit={openEdit}
             onSendWhatsapp={markMessaged}
+            onTogglePriority={(id, prioridad) => updateLead(id, { prioridad })}
             tasks={tasks}
             onToggleTask={toggleTask}
+            onOpenLeadById={openLeadById}
           />
         ) : view === "lista" ? (
           <ListView
@@ -342,6 +375,7 @@ export default function App() {
           onToggleSelect={toggleSelect}
           onSelectAll={selectAll}
           onSendWhatsapp={markMessaged}
+          onTogglePriority={(id, prioridad) => updateLead(id, { prioridad })}
         />
         ) : (
           <ContactsView
@@ -442,6 +476,16 @@ export default function App() {
           leads={leads}
           onClose={() => setReporteOpen(false)}
           onUpdateLead={updateLead}
+          onSendWhatsapp={markMessaged}
+        />
+      )}
+
+      {/* Retargeting campaign modal */}
+      {retargetingOpen && (
+        <RetargetingModal
+          leads={leads}
+          onClose={() => setRetargetingOpen(false)}
+          onApplyTag={(id, tags) => updateLead(id, { tags })}
           onSendWhatsapp={markMessaged}
         />
       )}

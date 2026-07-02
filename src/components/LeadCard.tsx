@@ -10,12 +10,13 @@ type Props = {
   onDragStart: (e: React.DragEvent, id: string) => void;
   onDragEnd: () => void;
   onSendWhatsapp: (id: string) => void;
+  onTogglePriority?: (id: string, prioridad: boolean) => void;
 };
 
-export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp }: Props) {
+export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp, onTogglePriority }: Props) {
   return (
     <article
-      className="lead-card"
+      className={`lead-card ${lead.prioridad ? "lead-card--priority" : ""}`}
       draggable
       onDragStart={(e) => onDragStart(e, lead.id)}
       onDragEnd={onDragEnd}
@@ -29,6 +30,20 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp
         }
       }}
     >
+      {onTogglePriority && (
+        <button
+          type="button"
+          className="lead-card-star"
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePriority(lead.id, !lead.prioridad);
+          }}
+          title={lead.prioridad ? "Quitar destacado" : "Marcar como destacado"}
+          aria-label={lead.prioridad ? "Quitar destacado" : "Marcar como destacado"}
+        >
+          {lead.prioridad ? "★" : "☆"}
+        </button>
+      )}
       {lead.telefono && (
         <a
           className="lead-card-whatsapp"

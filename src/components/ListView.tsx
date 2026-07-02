@@ -13,6 +13,7 @@ type Props = {
   onToggleSelect: (id: string) => void;
   onSelectAll: (ids: string[]) => void;
   onSendWhatsapp: (id: string) => void;
+  onTogglePriority: (id: string, prioridad: boolean) => void;
 };
 
 type SortMode = "recientes" | "recontactar";
@@ -26,7 +27,7 @@ function formatDate(iso: string) {
   });
 }
 
-export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, onSelectAll, onSendWhatsapp }: Props) {
+export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, onSelectAll, onSendWhatsapp, onTogglePriority }: Props) {
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("recientes");
   const [stageFilter, setStageFilter] = useState<StageFilter>("todas");
@@ -34,6 +35,8 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
   const byStage = stageFilter === "todas" ? leads : leads.filter((l) => l.etapa === stageFilter);
 
   const sorted = [...byStage].sort((a, b) => {
+    const prio = Number(b.prioridad) - Number(a.prioridad);
+    if (prio !== 0) return prio;
     if (sortMode === "recontactar") {
       const at = a.ultimoMensajeEn ? new Date(a.ultimoMensajeEn).getTime() : -1;
       const bt = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : -1;
@@ -128,6 +131,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
                 className="list-checkbox"
               />
             </th>
+            <th className="list-star-col"></th>
             <th>Nombre</th>
             <th>Empresa</th>
             <th>Contacto</th>
@@ -156,6 +160,19 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
                   onClick={(e) => e.stopPropagation()}
                   className="list-checkbox"
                 />
+              </td>
+              <td
+                className="list-star-col"
+                onClick={(e) => { e.stopPropagation(); onTogglePriority(lead.id, !lead.prioridad); }}
+              >
+                <button
+                  type="button"
+                  className="list-star-btn"
+                  title={lead.prioridad ? "Quitar destacado" : "Marcar como destacado"}
+                  aria-label={lead.prioridad ? "Quitar destacado" : "Marcar como destacado"}
+                >
+                  {lead.prioridad ? "★" : "☆"}
+                </button>
               </td>
               <td className="list-name">
                 {lead.nombre}

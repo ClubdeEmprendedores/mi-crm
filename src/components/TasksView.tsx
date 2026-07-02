@@ -8,6 +8,7 @@ type Props = {
   onAdd: (texto: string) => void;
   onToggle: (id: string, hecha: boolean) => void;
   onDelete: (id: string) => void;
+  onOpenLead: (leadId: string) => void;
 };
 
 function formatDate(iso: string) {
@@ -18,7 +19,7 @@ function formatDate(iso: string) {
   });
 }
 
-export function TasksView({ tasks, loading, error, onAdd, onToggle, onDelete }: Props) {
+export function TasksView({ tasks, loading, error, onAdd, onToggle, onDelete, onOpenLead }: Props) {
   const [texto, setTexto] = useState("");
 
   if (loading) {
@@ -101,6 +102,16 @@ CREATE POLICY "tasks_all" ON tasks
                   />
                   <span className="tasks-item-text">{t.texto}</span>
                 </label>
+                {t.leadId && (
+                  <button
+                    type="button"
+                    className="tasks-item-lead-link"
+                    onClick={() => onOpenLead(t.leadId!)}
+                    title="Ver lead"
+                  >
+                    👤 Ver lead
+                  </button>
+                )}
                 <span className="tasks-item-date">{formatDate(t.creadoEn)}</span>
                 <button
                   type="button"

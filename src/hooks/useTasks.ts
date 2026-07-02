@@ -7,6 +7,7 @@ type DbRow = {
   texto: string;
   hecha: boolean;
   creado_en: string;
+  lead_id?: string | null;
 };
 
 function fromDb(row: DbRow): Task {
@@ -15,6 +16,7 @@ function fromDb(row: DbRow): Task {
     texto: row.texto,
     hecha: row.hecha,
     creadoEn: row.creado_en,
+    leadId: row.lead_id ?? undefined,
   };
 }
 

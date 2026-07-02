@@ -35,6 +35,7 @@ export type Lead = {
   tags: string[];
   ultimoMensajeEn?: string;
   historial: HistorialEntry[];
+  prioridad: boolean;
 };
 
 export type Contact = {
@@ -53,9 +54,10 @@ export type Task = {
   texto: string;
   hecha: boolean;
   creadoEn: string;
+  leadId?: string;
 };
 
-export type ViewMode = "kanban" | "lista" | "contactos" | "tareas";
+export type ViewMode = "kanban" | "lista" | "contactos" | "tareas" | "metricas";
 
 export const STAGE_LABELS: Record<Stage, string> = {
   nuevo: "Nuevo",
