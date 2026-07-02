@@ -157,6 +157,9 @@ body {
 }
 
 .view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.4rem 1rem;
   border: none;
   background: transparent;
@@ -167,6 +170,21 @@ body {
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.3rem;
+  height: 1.3rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #2fbf5f;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .view-toggle button.active {

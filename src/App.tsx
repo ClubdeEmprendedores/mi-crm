@@ -100,6 +100,8 @@ export default function App() {
   const isTasksView = view === "tareas";
   const isMetricsView = view === "metricas";
 
+  const pendingTasksCount = tasks.filter((t) => !t.hecha).length;
+
   const handleViewChange = (v: ViewMode) => {
     setView(v);
     setSelectedIds(new Set());
@@ -190,6 +192,7 @@ export default function App() {
             onClick={() => handleViewChange("kanban")}
           >
             Kanban
+            {leads.length > 0 && <span className="tab-badge">{leads.length}</span>}
           </button>
           <button
             type="button"
@@ -199,6 +202,7 @@ export default function App() {
             onClick={() => handleViewChange("lista")}
           >
             Listado
+            {leads.length > 0 && <span className="tab-badge">{leads.length}</span>}
           </button>
           <button
             type="button"
@@ -208,6 +212,7 @@ export default function App() {
             onClick={() => handleViewChange("contactos")}
           >
             Contactos
+            {contacts.length > 0 && <span className="tab-badge">{contacts.length}</span>}
           </button>
           <button
             type="button"
@@ -217,6 +222,7 @@ export default function App() {
             onClick={() => handleViewChange("tareas")}
           >
             Tareas
+            {pendingTasksCount > 0 && <span className="tab-badge">{pendingTasksCount}</span>}
           </button>
           <button
             type="button"
