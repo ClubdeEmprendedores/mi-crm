@@ -57,7 +57,28 @@ export type Task = {
   leadId?: string;
 };
 
-export type ViewMode = "kanban" | "lista" | "contactos" | "tareas" | "metricas";
+export type EstadoFoto = "pendiente" | "recibida" | "aprobada";
+export type EstadoCopy = "pendiente" | "borrador" | "aprobado";
+export type ContenidoTipo = "post" | "historia" | "carrusel";
+export type ContenidoSede = "sanfernando" | "santelmo";
+
+export type ContenidoItem = {
+  id: string;
+  fecha: string;
+  sede: ContenidoSede;
+  etiqueta: string;
+  tipo: ContenidoTipo;
+  estadoFoto: EstadoFoto;
+  estadoCopy: EstadoCopy;
+  publicado: boolean;
+  imageUrl?: string;
+  caption?: string;
+  notas?: string;
+  creadoEn: string;
+  actualizadoEn: string;
+};
+
+export type ViewMode = "kanban" | "lista" | "contactos" | "tareas" | "metricas" | "contenido";
 
 export const STAGE_LABELS: Record<Stage, string> = {
   nuevo: "Nuevo",
@@ -84,4 +105,39 @@ export const PROPUESTA_LABELS: Record<PropuestaOption, string> = {
 export const SEDE_LABELS: Record<SedeOption, string> = {
   sanfer: "San Fernando",
   santelmo: "San Telmo",
+};
+
+export const CONTENIDO_SEDE_LABELS: Record<ContenidoSede, string> = {
+  sanfernando: "San Fernando",
+  santelmo: "San Telmo",
+};
+
+export const CONTENIDO_TIPO_LABELS: Record<ContenidoTipo, string> = {
+  post: "Post",
+  historia: "Historia",
+  carrusel: "Carrusel",
+};
+
+export const ESTADO_FOTO_LABELS: Record<EstadoFoto, string> = {
+  pendiente: "Falta foto",
+  recibida: "Foto recibida",
+  aprobada: "Foto aprobada",
+};
+
+export const ESTADO_FOTO_COLORS: Record<EstadoFoto, string> = {
+  pendiente: "#b45309",
+  recibida: "#FFC933",
+  aprobada: "#2fbf5f",
+};
+
+export const ESTADO_COPY_LABELS: Record<EstadoCopy, string> = {
+  pendiente: "Falta copy",
+  borrador: "Copy en borrador",
+  aprobado: "Copy aprobado",
+};
+
+export const ESTADO_COPY_COLORS: Record<EstadoCopy, string> = {
+  pendiente: "#b45309",
+  borrador: "#FFC933",
+  aprobado: "#2fbf5f",
 };

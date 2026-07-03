@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CampaignModal } from "./components/CampaignModal";
 import { ContactModal } from "./components/ContactModal";
 import { ContactsView } from "./components/ContactsView";
+import { ContenidoView } from "./components/ContenidoView";
 import { ImportModal } from "./components/ImportModal";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { LeadModal } from "./components/LeadModal";
@@ -11,6 +12,7 @@ import { ReporteMensualModal } from "./components/ReporteMensualModal";
 import { RetargetingModal } from "./components/RetargetingModal";
 import { TasksView } from "./components/TasksView";
 import { useContacts } from "./hooks/useContacts";
+import { useContenido } from "./hooks/useContenido";
 import { useLeads } from "./hooks/useLeads";
 import { useTasks } from "./hooks/useTasks";
 import type { Contact, Lead, ViewMode } from "./types";
@@ -36,6 +38,10 @@ export default function App() {
     tasks, loading: tasksLoading, error: tasksError, clearError: clearTasksError,
     addTask, toggleTask, deleteTask,
   } = useTasks();
+  const {
+    items: contenidoItems, loading: contenidoLoading, error: contenidoError, clearError: clearContenidoError,
+    updateItem: updateContenidoItem, deleteItem: deleteContenidoItem,
+  } = useContenido();
 
   const [view, setView] = useState<ViewMode>("kanban");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -49,14 +55,18 @@ export default function App() {
   const exportRef = useRef<HTMLDivElement>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const isTasksMigrationError = !!tasksError && (
-    tasksError.toLowerCase().includes("does not exist") ||
-    tasksError.toLowerCase().includes("no existe") ||
-    tasksError.toLowerCase().includes("could not find the table") ||
-    tasksError.toLowerCase().includes("schema cache")
+  const isMigrationError = (msg: string | null) => !!msg && (
+    msg.toLowerCase().includes("does not exist") ||
+    msg.toLowerCase().includes("no existe") ||
+    msg.toLowerCase().includes("could not find the table") ||
+    msg.toLowerCase().includes("schema cache")
   );
-  const appError = leadsError || contactsError || (isTasksMigrationError ? null : tasksError);
-  const clearError = () => { clearLeadsError(); clearContactsError(); clearTasksError(); };
+  const isTasksMigrationError = isMigrationError(tasksError);
+  const isContenidoMigrationError = isMigrationError(contenidoError);
+  const appError = leadsError || contactsError
+    || (isTasksMigrationError ? null : tasksError)
+    || (isContenidoMigrationError ? null : contenidoError);
+  const clearError = () => { clearLeadsError(); clearContactsError(); clearTasksError(); clearContenidoError(); };
 
   // Auto-dismiss error toast after 6s
   useEffect(() => {
@@ -99,8 +109,12 @@ export default function App() {
   const isContactsView = view === "contactos";
   const isTasksView = view === "tareas";
   const isMetricsView = view === "metricas";
+  const isContenidoView = view === "contenido";
 
   const pendingTasksCount = tasks.filter((t) => !t.hecha).length;
+  const pendingContenidoCount = contenidoItems.filter(
+    (i) => !i.publicado && (i.estadoFoto !== "aprobada" || i.estadoCopy !== "aprobado"),
+  ).length;
 
   const handleViewChange = (v: ViewMode) => {
     setView(v);
@@ -233,9 +247,19 @@ export default function App() {
           >
             Métricas
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "contenido"}
+            className={view === "contenido" ? "active" : ""}
+            onClick={() => handleViewChange("contenido")}
+          >
+            📅 Contenido
+            {pendingContenidoCount > 0 && <span className="tab-badge">{pendingContenidoCount}</span>}
+          </button>
         </div>
 
-        {!isTasksView && !isMetricsView && (
+        {!isTasksView && !isMetricsView && !isContenidoView && (
           <div className="header-actions">
             <div className="export-wrap" ref={exportRef}>
               <button
@@ -349,6 +373,14 @@ export default function App() {
       <main className="app-main">
         {view === "metricas" ? (
           <MetricsView leads={leads} />
+        ) : view === "contenido" ? (
+          <ContenidoView
+            items={contenidoItems}
+            loading={contenidoLoading}
+            error={contenidoError}
+            onUpdate={updateContenidoItem}
+            onDelete={deleteContenidoItem}
+          />
         ) : view === "tareas" ? (
           <TasksView
             tasks={tasks}
