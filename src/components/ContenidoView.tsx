@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ContenidoItem, ContenidoSede, EstadoFoto } from "../types";
+import type { ContenidoItem, ContenidoSede } from "../types";
 import {
   CONTENIDO_SEDE_LABELS,
   CONTENIDO_TIPO_LABELS,
@@ -187,33 +187,11 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
                     {item.caption && <span className="contenido-has-copy" title="Tiene copy cargado"> 📝</span>}
                   </td>
                   <td>{CONTENIDO_TIPO_LABELS[item.tipo]}</td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <div className="contenido-estado-cell">
-                      <Badge label={ESTADO_FOTO_LABELS[item.estadoFoto]} color={ESTADO_FOTO_COLORS[item.estadoFoto]} />
-                      {item.estadoFoto !== "aprobada" && (
-                        <button
-                          type="button"
-                          className="contenido-approve-btn"
-                          onClick={() => onUpdate(item.id, { estadoFoto: "aprobada" as EstadoFoto })}
-                        >
-                          ✅ Aprobar
-                        </button>
-                      )}
-                    </div>
+                  <td>
+                    <Badge label={ESTADO_FOTO_LABELS[item.estadoFoto]} color={ESTADO_FOTO_COLORS[item.estadoFoto]} />
                   </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <div className="contenido-estado-cell">
-                      <Badge label={ESTADO_COPY_LABELS[item.estadoCopy]} color={ESTADO_COPY_COLORS[item.estadoCopy]} />
-                      {item.estadoCopy !== "aprobado" && (
-                        <button
-                          type="button"
-                          className="contenido-approve-btn"
-                          onClick={() => setViewing(item)}
-                        >
-                          👀 Ver y aprobar
-                        </button>
-                      )}
-                    </div>
+                  <td>
+                    <Badge label={ESTADO_COPY_LABELS[item.estadoCopy]} color={ESTADO_COPY_COLORS[item.estadoCopy]} />
                   </td>
                   <td>
                     <Badge

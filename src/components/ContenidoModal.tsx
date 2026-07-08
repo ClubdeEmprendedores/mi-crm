@@ -19,7 +19,8 @@ const ESTADOS_FOTO: EstadoFoto[] = ["pendiente", "recibida", "aprobada"];
 const ESTADOS_COPY: EstadoCopy[] = ["pendiente", "borrador", "aprobado"];
 
 export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
-  useEscapeKey(onClose);
+  const [lightbox, setLightbox] = useState(false);
+  useEscapeKey(() => (lightbox ? setLightbox(false) : onClose()));
 
   const [form, setForm] = useState({
     etiqueta: item.etiqueta,
@@ -89,7 +90,15 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
         <form id="contenido-form" onSubmit={handleSubmit} className="modal-form">
           <div className="modal-body">
             {form.imageUrl ? (
-              <img src={form.imageUrl} alt="" className="contenido-modal-preview" />
+              <button
+                type="button"
+                className="contenido-modal-preview-btn"
+                onClick={() => setLightbox(true)}
+                title="Ver en pantalla completa"
+              >
+                <img src={form.imageUrl} alt="" className="contenido-modal-preview" />
+                <span className="contenido-modal-preview-hint">🔍 Ver en pantalla completa</span>
+              </button>
             ) : (
               <p className="import-empty">Sin imagen de referencia cargada todavía.</p>
             )}
@@ -223,6 +232,24 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
           </footer>
         </form>
       </div>
+
+      {lightbox && form.imageUrl && (
+        <div
+          className="contenido-lightbox"
+          onClick={(e) => { e.stopPropagation(); setLightbox(false); }}
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="btn-icon contenido-lightbox-close"
+            onClick={(e) => { e.stopPropagation(); setLightbox(false); }}
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+          <img src={form.imageUrl} alt="" className="contenido-lightbox-img" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }
