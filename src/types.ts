@@ -8,7 +8,7 @@ export const STAGES = [
 
 export type Stage = (typeof STAGES)[number];
 
-export type PropuestaOption = "sanfer" | "santelmo" | "palermo";
+export type PropuestaOption = "sanfer" | "santelmo" | "ambas";
 export type SedeOption = "sanfer" | "santelmo";
 
 export type HistorialEntry = {
@@ -99,7 +99,7 @@ export const STAGE_COLORS: Record<Stage, string> = {
 export const PROPUESTA_LABELS: Record<PropuestaOption, string> = {
   sanfer: "San Fernando",
   santelmo: "San Telmo",
-  palermo: "Palermo (Aigavaiga)",
+  ambas: "Ambas sedes",
 };
 
 export const SEDE_LABELS: Record<SedeOption, string> = {

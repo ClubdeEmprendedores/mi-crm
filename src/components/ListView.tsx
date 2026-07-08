@@ -1,9 +1,22 @@
 import { useRef, useState } from "react";
 import type { Lead, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
+import {
+  ESTADO_CONVERSACION_COLORS,
+  ESTADO_CONVERSACION_LABELS,
+  ESTADOS_CONVERSACION,
+  type EstadoConversacion,
+  getEffectiveUltimoMensaje,
+  getEstadoConversacion,
+  getUltimoContacto,
+} from "../utils/conversacion";
 import { normalizeSearch } from "../utils/text";
 import { mensajeReconexion, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max).trim()}…` : text;
+}
 
 type Props = {
   leads: Lead[];
@@ -18,6 +31,7 @@ type Props = {
 
 type SortMode = "recientes" | "recontactar";
 type StageFilter = Stage | "todas";
+type ConversacionFilter = EstadoConversacion | "todas";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-AR", {
@@ -31,15 +45,22 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("recientes");
   const [stageFilter, setStageFilter] = useState<StageFilter>("todas");
+  const [conversacionFilter, setConversacionFilter] = useState<ConversacionFilter>("todas");
 
   const byStage = stageFilter === "todas" ? leads : leads.filter((l) => l.etapa === stageFilter);
+  const byConversacion =
+    conversacionFilter === "todas"
+      ? byStage
+      : byStage.filter((l) => getEstadoConversacion(l) === conversacionFilter);
 
-  const sorted = [...byStage].sort((a, b) => {
+  const sorted = [...byConversacion].sort((a, b) => {
     const prio = Number(b.prioridad) - Number(a.prioridad);
     if (prio !== 0) return prio;
     if (sortMode === "recontactar") {
-      const at = a.ultimoMensajeEn ? new Date(a.ultimoMensajeEn).getTime() : -1;
-      const bt = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : -1;
+      const aFecha = getEffectiveUltimoMensaje(a);
+      const bFecha = getEffectiveUltimoMensaje(b);
+      const at = aFecha ? new Date(aFecha).getTime() : -1;
+      const bt = bFecha ? new Date(bFecha).getTime() : -1;
       return at - bt;
     }
     return new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime();
@@ -101,6 +122,17 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
         </select>
         <select
           className="list-sort-select"
+          value={conversacionFilter}
+          onChange={(e) => setConversacionFilter(e.target.value as ConversacionFilter)}
+          title="Filtrar por estado de la conversación"
+        >
+          <option value="todas">Toda conversación</option>
+          {ESTADOS_CONVERSACION.map((e) => (
+            <option key={e} value={e}>{ESTADO_CONVERSACION_LABELS[e]}</option>
+          ))}
+        </select>
+        <select
+          className="list-sort-select"
           value={sortMode}
           onChange={(e) => setSortMode(e.target.value as SortMode)}
           title="Ordenar"
@@ -137,13 +169,17 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
             <th>Contacto</th>
             <th>Propuesta</th>
             <th>Etapa</th>
+            <th>Conversación</th>
             <th>Contactado</th>
             <th>Último mensaje</th>
             <th>Creado</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.map((lead) => (
+          {filtered.map((lead) => {
+            const estado = getEstadoConversacion(lead);
+            const ultimo = getUltimoContacto(lead);
+            return (
             <tr
               key={lead.id}
               onClick={() => onEdit(lead)}
@@ -211,11 +247,30 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
                   )}
                 </div>
               </td>
+              <td>
+                {(lead.etapa === "nuevo" || lead.etapa === "contactado") && (
+                  <span
+                    className="conversation-badge"
+                    style={{ color: ESTADO_CONVERSACION_COLORS[estado], borderColor: ESTADO_CONVERSACION_COLORS[estado] }}
+                  >
+                    {ESTADO_CONVERSACION_LABELS[estado]}
+                  </span>
+                )}
+              </td>
               <td className="list-date">
                 {lead.contactadoEn ? formatDate(lead.contactadoEn) : "—"}
               </td>
               <td className="list-date list-wa-cell" onClick={(e) => e.stopPropagation()}>
-                {lead.ultimoMensajeEn ? formatDate(lead.ultimoMensajeEn) : "—"}
+                <div className="list-msg-cell">
+                  <span>
+                    {ultimo ? `${ultimo.quien === "yo" ? "Vos" : ultimo.quien === "ellos" ? "Ellos" : ""}: ${formatDate(ultimo.fecha)}` : "—"}
+                  </span>
+                  {ultimo?.texto && (
+                    <span className="list-msg-preview" title={ultimo.texto}>
+                      "{truncate(ultimo.texto, 40)}"
+                    </span>
+                  )}
+                </div>
                 {lead.telefono && (
                   <a
                     className="lead-card-whatsapp list-wa"
@@ -232,7 +287,8 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
               </td>
               <td className="list-date">{formatDate(lead.creadoEn)}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
       )}

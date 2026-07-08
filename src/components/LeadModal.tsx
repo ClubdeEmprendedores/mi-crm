@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { Contact, HistorialEntry, Lead, PropuestaOption, SedeOption, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
+import { parseSpeaker } from "../utils/conversacion";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 import { formatDate, formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
@@ -525,11 +526,13 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
               <span className="field-label">Historial de conversación</span>
               {form.historial.length > 0 && (
                 <ul className="historial-list">
-                  {form.historial.map((entry, i) => (
+                  {form.historial.map((entry, i) => {
+                    const speaker = parseSpeaker(entry.nota);
+                    return (
                     <li key={i} className="historial-entry">
                       <div className="historial-entry-header">
                         <span className="historial-entry-date">
-                          {formatDate(entry.fecha)}
+                          {speaker === "yo" ? "🟢 Vos" : speaker === "ellos" ? "🔵 Ellos" : ""} {formatDate(entry.fecha)}
                         </span>
                         <button
                           type="button"
@@ -542,7 +545,8 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                       </div>
                       <p className="historial-entry-text">{entry.nota}</p>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
               <div className="historial-add">

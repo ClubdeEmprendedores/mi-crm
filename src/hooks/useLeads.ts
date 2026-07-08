@@ -340,5 +340,44 @@ export function useLeads() {
     if (err) setError(err.message);
   }, []);
 
-  return { leads, loading, error, clearError, addLead, addLeads, updateLead, moveLead, deleteLead, deleteLeads, countDuplicates, deduplicateLeads };
+  /**
+   * Leads en "nuevo" con historial de conversación real ya fueron contactados, solo
+   * que la etapa nunca se actualizó (típico de importaciones masivas de WhatsApp).
+   * Los mueve a "contactado" en lote, usando la fecha del primer mensaje del historial.
+   */
+  const recalcularEtapas = useCallback(async (): Promise<number> => {
+    const candidates = leads.filter((l) => l.etapa === "nuevo" && l.historial.length > 0);
+    if (candidates.length === 0) return 0;
+
+    const updates = candidates.map((l) => {
+      const fechas = l.historial.map((h) => h.fecha).filter(Boolean).sort();
+      const contactadoEn = l.contactadoEn ?? fechas[0] ?? new Date().toISOString();
+      return { id: l.id, contactadoEn };
+    });
+
+    const CONCURRENCY = 20;
+    for (let i = 0; i < updates.length; i += CONCURRENCY) {
+      const slice = updates.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        slice.map(({ id, contactadoEn }) =>
+          supabase.from("leads").update({ etapa: "contactado", contactado_en: contactadoEn }).eq("id", id),
+        ),
+      );
+      const firstError = results.find((r) => r.error)?.error;
+      if (firstError) { setError(firstError.message); return i; }
+    }
+
+    const byId = new Map(updates.map((u) => [u.id, u.contactadoEn]));
+    setLeads((prev) =>
+      prev.map((l) =>
+        byId.has(l.id) ? { ...l, etapa: "contactado", contactadoEn: byId.get(l.id) } : l,
+      ),
+    );
+    return updates.length;
+  }, [leads]);
+
+  return {
+    leads, loading, error, clearError, addLead, addLeads, updateLead, moveLead, deleteLead, deleteLeads,
+    countDuplicates, deduplicateLeads, recalcularEtapas,
+  };
 }

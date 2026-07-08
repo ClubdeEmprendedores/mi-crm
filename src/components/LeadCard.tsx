@@ -1,8 +1,18 @@
 import type { Lead } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS } from "../types";
+import {
+  ESTADO_CONVERSACION_COLORS,
+  ESTADO_CONVERSACION_LABELS,
+  getEstadoConversacion,
+  getUltimoContacto,
+} from "../utils/conversacion";
 import { formatShortDate } from "../utils/format";
 import { mensajeReconexion, whatsappUrl } from "../utils/whatsapp";
 import { InstagramLink } from "./InstagramLink";
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max).trim()}…` : text;
+}
 
 type Props = {
   lead: Lead;
@@ -14,6 +24,10 @@ type Props = {
 };
 
 export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp, onTogglePriority }: Props) {
+  const mostrarConversacion = lead.etapa === "nuevo" || lead.etapa === "contactado";
+  const estado = mostrarConversacion ? getEstadoConversacion(lead) : null;
+  const ultimo = mostrarConversacion ? getUltimoContacto(lead) : null;
+
   return (
     <article
       className={`lead-card ${lead.prioridad ? "lead-card--priority" : ""}`}
@@ -64,6 +78,14 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp
       {lead.noRecontactar && (
         <p className="lead-card-badge lead-card-badge--warning">⚠ No recontactar</p>
       )}
+      {estado && (
+        <p
+          className="lead-card-badge lead-card-badge--conversacion"
+          style={{ color: ESTADO_CONVERSACION_COLORS[estado], borderColor: `${ESTADO_CONVERSACION_COLORS[estado]}59` }}
+        >
+          {ESTADO_CONVERSACION_LABELS[estado]}
+        </p>
+      )}
       {lead.tags.length > 0 && (
         <div className="lead-card-tags">
           {lead.tags.map((t) => (
@@ -84,8 +106,11 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp
       {lead.contactadoEn && (
         <p className="lead-card-meta">Contactado: {formatShortDate(lead.contactadoEn)}</p>
       )}
-      {lead.ultimoMensajeEn && (
-        <p className="lead-card-meta">Último msj: {formatShortDate(lead.ultimoMensajeEn)}</p>
+      {ultimo && (
+        <p className="lead-card-meta">
+          {ultimo.quien === "yo" ? "Vos" : ultimo.quien === "ellos" ? "Ellos" : "Últ."}: {formatShortDate(ultimo.fecha)}
+          {ultimo.texto && <span className="lead-card-msg-preview"> — "{truncate(ultimo.texto, 60)}"</span>}
+        </p>
       )}
       {lead.instagram && (
         <p className="lead-card-ig">

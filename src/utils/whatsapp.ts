@@ -1,3 +1,5 @@
+import type { HistorialEntry } from "../types";
+import { getEstadoConversacion, type EstadoConversacion } from "./conversacion";
 import { SAN_TELMO_TAG } from "./reconexionCampaign";
 
 export function whatsappUrl(telefono: string, mensaje?: string): string {
@@ -34,11 +36,62 @@ export function defaultReconexionMensaje(nombre: string): string {
   return `${saludo} Soy Mati, de Club de Emprendedores. ¿Cómo va tu emprendimiento? Te cuento cómo podés tener tu espacio en nuestro showroom.`;
 }
 
-/** Elige el mensaje de reconexión según los tags del lead: San Telmo > tibio > frío > genérico. */
-export function mensajeReconexion(lead: { nombre: string; tags: string[] }): string {
+/** Nunca se lo contactó: primer mensaje de apertura. */
+export function mensajePrimerContacto(nombre: string): string {
+  const primerNombre = nombre.trim().split(/\s+/)[0] || "";
+  const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
+  return `${saludo} Soy Mati, de Club de Emprendedores 👋 Tenemos dos sedes, San Fernando y San Telmo. Contame: ¿qué vendés? ¿Tenés Instagram para conocer un poco tu marca?`;
+}
+
+/** Ya se le escribió y no respondió: mensaje de recontacto liviano. */
+export function mensajeSinRespuestaDeEllos(nombre: string): string {
+  const primerNombre = nombre.trim().split(/\s+/)[0] || "";
+  const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
+  return `${saludo} Soy Mati, de Club de Emprendedores. Te escribí hace un tiempo y no sé si llegaste a ver el mensaje 😅 ¿Seguís con tu emprendimiento? Contame y te cuento cómo tener tu espacio con nosotros.`;
+}
+
+/** Último mensaje fue de ellos: retomar la conversación que quedó pendiente. */
+export function mensajeEsperandoTuRespuesta(nombre: string): string {
+  const primerNombre = nombre.trim().split(/\s+/)[0] || "";
+  const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
+  return `${saludo} Perdón la demora en responder 🙏 Seguimos la conversación: ¿en qué habíamos quedado?`;
+}
+
+/** Elige la plantilla según el sub-estado de la conversación (no la etapa del Kanban). */
+export function mensajePorEstadoConversacion(nombre: string, estado: EstadoConversacion): string {
+  switch (estado) {
+    case "nunca":
+      return mensajePrimerContacto(nombre);
+    case "sin_respuesta_de_ellos":
+      return mensajeSinRespuestaDeEllos(nombre);
+    case "esperando_tu_respuesta":
+      return mensajeEsperandoTuRespuesta(nombre);
+    default:
+      return defaultReconexionMensaje(nombre);
+  }
+}
+
+type ReconexionLead = {
+  nombre: string;
+  tags: string[];
+  historial?: HistorialEntry[];
+  ultimoMensajeEn?: string;
+};
+
+/**
+ * Elige el mensaje de reconexión: tag de campaña específica (San Telmo > tibio > frío)
+ * si existe, si no según el sub-estado real de la conversación (nunca contactado /
+ * no respondió / quedó esperando tu respuesta), y como último recurso el genérico.
+ */
+export function mensajeReconexion(lead: ReconexionLead): string {
   if (lead.tags.includes(SAN_TELMO_TAG)) return sanTelmoReconexionMensaje(lead.nombre);
   if (lead.tags.includes(RECONTACTO_TIBIO_TAG)) return recontactoTibioMensaje(lead.nombre);
   if (lead.tags.includes(RECONTACTO_FRIO_TAG)) return recontactoFrioMensaje(lead.nombre);
+  const estado = getEstadoConversacion({
+    historial: lead.historial ?? [],
+    ultimoMensajeEn: lead.ultimoMensajeEn,
+  });
+  if (estado !== "revisar") return mensajePorEstadoConversacion(lead.nombre, estado);
   return defaultReconexionMensaje(lead.nombre);
 }
 

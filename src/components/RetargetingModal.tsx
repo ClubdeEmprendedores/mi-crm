@@ -2,9 +2,28 @@ import { useMemo, useState } from "react";
 import type { Lead, Stage } from "../types";
 import { STAGES, STAGE_LABELS } from "../types";
 import { useEscapeKey } from "../hooks/useEscapeKey";
+import {
+  ESTADO_CONVERSACION_COLORS,
+  ESTADO_CONVERSACION_LABELS,
+  ESTADOS_CONVERSACION,
+  type EstadoConversacion,
+  getEffectiveUltimoMensaje,
+  getEstadoConversacion,
+  getUltimoContacto,
+} from "../utils/conversacion";
 import { formatShortDate } from "../utils/format";
 import { normalizeSearch } from "../utils/text";
-import { aplicarPlantilla, whatsappUrl } from "../utils/whatsapp";
+import {
+  aplicarPlantilla,
+  mensajeEsperandoTuRespuesta,
+  mensajePrimerContacto,
+  mensajeSinRespuestaDeEllos,
+  whatsappUrl,
+} from "../utils/whatsapp";
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max).trim()}…` : text;
+}
 
 type Props = {
   leads: Lead[];
@@ -27,6 +46,9 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
   useEscapeKey(onClose);
 
   const [stageFilter, setStageFilter] = useState<Set<Stage>>(new Set(DEFAULT_STAGES));
+  const [conversacionFilter, setConversacionFilter] = useState<Set<EstadoConversacion>>(
+    new Set(ESTADOS_CONVERSACION),
+  );
   const [soloFrios, setSoloFrios] = useState(true);
   const [diasFrio, setDiasFrio] = useState(14);
   const [excludeTagged, setExcludeTagged] = useState(true);
@@ -45,6 +67,14 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
     });
   };
 
+  const toggleConversacion = (e: EstadoConversacion) => {
+    setConversacionFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(e)) next.delete(e); else next.add(e);
+      return next;
+    });
+  };
+
   const matched = useMemo(() => {
     const q = normalizeSearch(search.trim());
     const cutoff = Date.now() - diasFrio * 24 * 60 * 60 * 1000;
@@ -53,9 +83,11 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
         if (!l.telefono) return false;
         if (l.noRecontactar) return false;
         if (!stageFilter.has(l.etapa)) return false;
+        if (!conversacionFilter.has(getEstadoConversacion(l))) return false;
         if (excludeTagged && tag && l.tags.includes(tag)) return false;
         if (soloFrios) {
-          const last = l.ultimoMensajeEn ? new Date(l.ultimoMensajeEn).getTime() : null;
+          const fecha = getEffectiveUltimoMensaje(l);
+          const last = fecha ? new Date(fecha).getTime() : null;
           if (last !== null && last >= cutoff) return false;
         }
         if (q) {
@@ -69,11 +101,13 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
         return true;
       })
       .sort((a, b) => {
-        const at = a.ultimoMensajeEn ? new Date(a.ultimoMensajeEn).getTime() : -1;
-        const bt = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : -1;
+        const aFecha = getEffectiveUltimoMensaje(a);
+        const bFecha = getEffectiveUltimoMensaje(b);
+        const at = aFecha ? new Date(aFecha).getTime() : -1;
+        const bt = bFecha ? new Date(bFecha).getTime() : -1;
         return at - bt;
       });
-  }, [leads, stageFilter, soloFrios, diasFrio, excludeTagged, tag, search]);
+  }, [leads, stageFilter, conversacionFilter, soloFrios, diasFrio, excludeTagged, tag, search]);
 
   const shown = matched.slice(0, PREVIEW_LIMIT);
 
@@ -125,6 +159,22 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
               </div>
             </div>
 
+            <div>
+              <span className="field-label">Estado de la conversación</span>
+              <div className="retargeting-stage-checks">
+                {ESTADOS_CONVERSACION.map((e) => (
+                  <label key={e} className="field-checkbox field-checkbox--inline">
+                    <input
+                      type="checkbox"
+                      checked={conversacionFilter.has(e)}
+                      onChange={() => toggleConversacion(e)}
+                    />
+                    {ESTADO_CONVERSACION_LABELS[e]}
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <label className="field-checkbox">
               <input
                 type="checkbox"
@@ -164,6 +214,29 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
 
             <label className="campaign-tag-label">
               Mensaje (usá {"{nombre}"} para el nombre de pila)
+              <div className="retargeting-template-btns">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm whatsapp-template-btn"
+                  onClick={() => setMensaje(mensajePrimerContacto("{nombre}"))}
+                >
+                  🆕 Primer contacto
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm whatsapp-template-btn"
+                  onClick={() => setMensaje(mensajeSinRespuestaDeEllos("{nombre}"))}
+                >
+                  🔴 No respondió
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm whatsapp-template-btn"
+                  onClick={() => setMensaje(mensajeEsperandoTuRespuesta("{nombre}"))}
+                >
+                  🟡 Esperaba tu respuesta
+                </button>
+              </div>
               <textarea rows={3} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
             </label>
           </div>
@@ -174,16 +247,28 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                 <tr>
                   <th>Nombre</th>
                   <th>Etapa</th>
+                  <th>Conversación</th>
                   <th>Etiquetas</th>
                   <th>Último mensaje</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {shown.map((lead) => (
+                {shown.map((lead) => {
+                  const estado = getEstadoConversacion(lead);
+                  const ultimo = getUltimoContacto(lead);
+                  return (
                   <tr key={lead.id}>
                     <td className="list-name">{lead.nombre}</td>
                     <td>{STAGE_LABELS[lead.etapa]}</td>
+                    <td>
+                      <span
+                        className="conversation-badge"
+                        style={{ color: ESTADO_CONVERSACION_COLORS[estado], borderColor: ESTADO_CONVERSACION_COLORS[estado] }}
+                      >
+                        {ESTADO_CONVERSACION_LABELS[estado]}
+                      </span>
+                    </td>
                     <td>
                       {lead.tags.length > 0 ? (
                         <div className="lead-card-tags">
@@ -195,7 +280,14 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                         <span className="import-empty">—</span>
                       )}
                     </td>
-                    <td>{lead.ultimoMensajeEn ? formatShortDate(lead.ultimoMensajeEn) : "Nunca"}</td>
+                    <td>
+                      {ultimo ? formatShortDate(ultimo.fecha) : "Nunca"}
+                      {ultimo?.texto && (
+                        <div className="list-msg-preview" title={ultimo.texto}>
+                          "{truncate(ultimo.texto, 40)}"
+                        </div>
+                      )}
+                    </td>
                     <td>
                       <a
                         className="lead-card-whatsapp campaign-wa"
@@ -210,10 +302,11 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                       </a>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
                 {shown.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="import-empty" style={{ textAlign: "center", padding: "1rem" }}>
+                    <td colSpan={6} className="import-empty" style={{ textAlign: "center", padding: "1rem" }}>
                       Sin leads que cumplan estos filtros.
                     </td>
                   </tr>

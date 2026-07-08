@@ -16,6 +16,7 @@ import { useContenido } from "./hooks/useContenido";
 import { useLeads } from "./hooks/useLeads";
 import { useTasks } from "./hooks/useTasks";
 import type { Contact, Lead, ViewMode } from "./types";
+import { leadsParaRecalcular } from "./utils/conversacion";
 import {
   exportContactsCsv,
   exportFullJson,
@@ -28,7 +29,7 @@ export default function App() {
   const {
     leads, loading, error: leadsError, clearError: clearLeadsError,
     addLead, addLeads, updateLead, moveLead, deleteLead, deleteLeads,
-    countDuplicates, deduplicateLeads,
+    countDuplicates, deduplicateLeads, recalcularEtapas,
   } = useLeads();
   const {
     contacts, loading: contactsLoading, error: contactsError, clearError: clearContactsError,
@@ -186,6 +187,15 @@ export default function App() {
     if (deleted > 0) setSuccessMsg(`Se fusionaron y eliminaron ${deleted} lead${deleted === 1 ? "" : "s"} duplicado${deleted === 1 ? "" : "s"}.`);
   };
 
+  const handleRecalcularEtapas = async () => {
+    const count = leadsParaRecalcular(leads).length;
+    if (count === 0) { setSuccessMsg("No hay leads para recalcular: todos los 'nuevo' están sin historial."); return; }
+    const s = count === 1 ? "" : "s";
+    if (!window.confirm(`${count} lead${s} en "Nuevo" ya tienen historial de conversación (o sea, ya se los contactó). Se van a mover a "Contactado" con la fecha del primer mensaje. ¿Continuar?`)) return;
+    const moved = await recalcularEtapas();
+    if (moved > 0) setSuccessMsg(`Se recalcularon ${moved} lead${moved === 1 ? "" : "s"}: pasaron de "Nuevo" a "Contactado".`);
+  };
+
   return (
     <div className="app">
       <header className="app-header">
@@ -299,6 +309,17 @@ export default function App() {
                 title="Detecta leads duplicados por teléfono, Instagram o email y fusiona su información en el más antiguo"
               >
                 Deduplicar
+              </button>
+            )}
+
+            {!isContactsView && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={handleRecalcularEtapas}
+                title="Mueve a 'Contactado' los leads 'Nuevo' que ya tienen historial de conversación"
+              >
+                🔄 Recalcular etapas
               </button>
             )}
 
