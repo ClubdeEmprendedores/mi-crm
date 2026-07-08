@@ -939,6 +939,74 @@ body {
   color: var(--text-muted);
 }
 
+.retargeting-filters-toggle {
+  align-self: flex-start;
+  margin-bottom: 0.6rem;
+  color: var(--text-muted);
+}
+
+.quick-send-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.quick-send-progress {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.quick-send-lead h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.3rem;
+}
+
+.quick-send-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.quick-send-ultimo {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.quick-send-textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  resize: vertical;
+}
+
+.quick-send-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.quick-send-btn {
+  margin-left: auto;
+  text-decoration: none;
+}
+
 .retargeting-template-btns {
   display: flex;
   flex-wrap: wrap;

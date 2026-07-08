@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Lead, Stage } from "../types";
-import { STAGES, STAGE_LABELS } from "../types";
+import { PROPUESTA_LABELS, STAGES, STAGE_LABELS } from "../types";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 import {
   ESTADO_CONVERSACION_COLORS,
@@ -42,6 +42,83 @@ function todayTag() {
   return `📣 Campaña ${dd}-${mm}`;
 }
 
+type QuickSendCardProps = {
+  lead: Lead;
+  position: number;
+  total: number;
+  defaultMessage: string;
+  onSend: (lead: Lead, mensaje: string) => void;
+  onSkip: () => void;
+  onPrev: () => void;
+  canPrev: boolean;
+};
+
+/** Tarjeta de un solo lead a la vez, para mandar mensajes rápido sin ir y volver a una tabla. */
+function QuickSendCard({ lead, position, total, defaultMessage, onSend, onSkip, onPrev, canPrev }: QuickSendCardProps) {
+  const [text, setText] = useState(defaultMessage);
+  const estado = getEstadoConversacion(lead);
+  const ultimo = getUltimoContacto(lead);
+
+  return (
+    <div className="quick-send-card">
+      <div className="quick-send-progress">
+        Lead {position} de {total}
+      </div>
+      <div className="quick-send-lead">
+        <h3>{lead.nombre}</h3>
+        <div className="quick-send-meta">
+          {lead.empresa && <span>{lead.empresa}</span>}
+          <span
+            className="conversation-badge"
+            style={{ color: ESTADO_CONVERSACION_COLORS[estado], borderColor: ESTADO_CONVERSACION_COLORS[estado] }}
+          >
+            {ESTADO_CONVERSACION_LABELS[estado]}
+          </span>
+          {lead.propuesta && <span>Prop: {PROPUESTA_LABELS[lead.propuesta]}</span>}
+          {lead.tags.length > 0 && (
+            <div className="lead-card-tags">
+              {lead.tags.map((t) => (
+                <span key={t} className="lead-card-tag">{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        {ultimo?.texto && (
+          <p className="quick-send-ultimo">
+            {ultimo.quien === "yo" ? "Vos" : ultimo.quien === "ellos" ? "Ellos" : "Últ."}
+            {" "}({formatShortDate(ultimo.fecha)}): "{ultimo.texto}"
+          </p>
+        )}
+      </div>
+
+      <textarea
+        className="quick-send-textarea"
+        rows={4}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+
+      <div className="quick-send-actions">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onPrev} disabled={!canPrev}>
+          ← Anterior
+        </button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onSkip}>
+          Saltar →
+        </button>
+        <a
+          className="btn btn-secondary whatsapp-send quick-send-btn"
+          href={whatsappUrl(lead.telefono, text)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => onSend(lead, text)}
+        >
+          💬 Enviar y siguiente
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }: Props) {
   useEscapeKey(onClose);
 
@@ -58,6 +135,9 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
     "¡Hola {nombre}! Soy Mati, de Club de Emprendedores. ¿Cómo va tu emprendimiento? Te cuento cómo podés tener tu espacio en nuestro showroom.",
   );
   const [sent, setSent] = useState<Set<string>>(new Set());
+  const [quickMode, setQuickMode] = useState(false);
+  const [quickIndex, setQuickIndex] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(true);
 
   const toggleStage = (s: Stage) => {
     setStageFilter((prev) => {
@@ -111,6 +191,10 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
 
   const shown = matched.slice(0, PREVIEW_LIMIT);
 
+  const queue = useMemo(() => matched.filter((l) => !sent.has(l.id)), [matched, sent]);
+  const currentIndex = Math.min(quickIndex, Math.max(queue.length - 1, 0));
+  const currentLead = queue[currentIndex];
+
   const handleSend = (lead: Lead) => {
     onSendWhatsapp(lead.id);
     if (tag.trim() && !lead.tags.includes(tag.trim())) {
@@ -130,6 +214,20 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
         <header className="modal-header">
           <h2 id="retargeting-title">Campaña de retargeting</h2>
           <div className="modal-header-actions">
+            <button
+              type="button"
+              className={`btn btn-sm ${quickMode ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => {
+                setQuickMode((m) => {
+                  const next = !m;
+                  setFiltersOpen(!next);
+                  return next;
+                });
+                setQuickIndex(0);
+              }}
+            >
+              🚀 Modo rápido
+            </button>
             <button type="button" className="btn-icon" onClick={onClose} aria-label="Cerrar">
               ✕
             </button>
@@ -138,10 +236,21 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
 
         <div className="campaign-body">
           <p className="campaign-intro">
-            Elegí a quién apuntar y qué mensaje mandarles. Cada envío marca al lead como
-            contactado y le aplica la etiqueta, así no se repite en la próxima campaña.
+            {quickMode
+              ? "Un lead a la vez: editá el mensaje si hace falta y mandalo. Al enviar (o saltar) pasa solo al siguiente."
+              : "Elegí a quién apuntar y qué mensaje mandarles. Cada envío marca al lead como contactado y le aplica la etiqueta, así no se repite en la próxima campaña."}
           </p>
 
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm retargeting-filters-toggle"
+            onClick={() => setFiltersOpen((o) => !o)}
+          >
+            {filtersOpen ? "▾" : "▸"} Filtros y mensaje
+            {!filtersOpen && ` · ${matched.length} lead${matched.length !== 1 ? "s" : ""}`}
+          </button>
+
+          {filtersOpen && (
           <div className="retargeting-filters">
             <div>
               <span className="field-label">Etapas incluidas</span>
@@ -240,7 +349,29 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
               <textarea rows={3} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
             </label>
           </div>
+          )}
 
+          {quickMode ? (
+            currentLead ? (
+              <QuickSendCard
+                key={currentLead.id}
+                lead={currentLead}
+                position={currentIndex + 1}
+                total={queue.length}
+                defaultMessage={aplicarPlantilla(mensaje, currentLead.nombre)}
+                onSend={(lead) => handleSend(lead)}
+                onSkip={() => setQuickIndex((i) => Math.min(i + 1, Math.max(queue.length - 1, 0)))}
+                onPrev={() => setQuickIndex((i) => Math.max(i - 1, 0))}
+                canPrev={currentIndex > 0}
+              />
+            ) : (
+              <p className="list-empty-hint">
+                {matched.length === 0
+                  ? "Sin leads que cumplan estos filtros."
+                  : "¡Terminaste la cola de esta tanda! 🎉 Ajustá los filtros si querés seguir con otro grupo."}
+              </p>
+            )
+          ) : (
           <div className="import-table-wrap campaign-table-wrap">
             <table className="import-table">
               <thead>
@@ -314,6 +445,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
               </tbody>
             </table>
           </div>
+          )}
         </div>
 
         <footer className="modal-footer">
