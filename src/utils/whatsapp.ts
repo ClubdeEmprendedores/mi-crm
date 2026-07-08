@@ -30,31 +30,34 @@ export function recontactoFrioMensaje(nombre: string): string {
   return `${saludo} Soy Mati, de Club de Emprendedores. Vi que en algún momento te interesaste por tener tu espacio con nosotros. Somos un showroom compartido en San Fernando y San Telmo: vos creás, nosotros vendemos, cobramos y reponemos. ¿Seguís emprendiendo? Te cuento más si querés.`;
 }
 
+/** Presentación estándar del Club, usada como apertura en los mensajes de primer contacto. */
+const INTRO_CLUB = "Soy Mati, del Club de Emprendedores. Tenemos sede en San Fernando y en San Telmo.";
+
 export function defaultReconexionMensaje(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} Soy Mati, de Club de Emprendedores. ¿Cómo va tu emprendimiento? Te cuento cómo podés tener tu espacio en nuestro showroom.`;
+  return `${saludo} ${INTRO_CLUB} ¿Cómo va tu emprendimiento? Te cuento cómo podés tener tu espacio en nuestro showroom.`;
 }
 
 /** Nunca se lo contactó: primer mensaje de apertura. */
 export function mensajePrimerContacto(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} Soy Mati, de Club de Emprendedores 👋 Tenemos dos sedes, San Fernando y San Telmo. Contame: ¿qué vendés? ¿Tenés Instagram para conocer un poco tu marca?`;
+  return `${saludo} ${INTRO_CLUB} Contame: ¿qué vendés? ¿Tenés Instagram para conocer un poco tu marca?`;
 }
 
 /** Ya se le escribió y no respondió: mensaje de recontacto liviano. */
 export function mensajeSinRespuestaDeEllos(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} Soy Mati, de Club de Emprendedores. Te escribí hace un tiempo y no sé si llegaste a ver el mensaje 😅 ¿Seguís con tu emprendimiento? Contame y te cuento cómo tener tu espacio con nosotros.`;
+  return `${saludo} ${INTRO_CLUB} Te escribí hace un tiempo y no sé si llegaste a ver el mensaje. ¿Seguís con tu emprendimiento? Contame y te cuento cómo tener tu espacio con nosotros.`;
 }
 
 /** Último mensaje fue de ellos: retomar la conversación que quedó pendiente. */
 export function mensajeEsperandoTuRespuesta(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} Perdón la demora en responder 🙏 Seguimos la conversación: ¿en qué habíamos quedado?`;
+  return `${saludo} Perdón la demora en responder. Seguimos la conversación: ¿en qué habíamos quedado?`;
 }
 
 /** Elige la plantilla según el sub-estado de la conversación (no la etapa del Kanban). */
