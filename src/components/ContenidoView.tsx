@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ContenidoItem, ContenidoSede, EstadoCopy, EstadoFoto } from "../types";
+import type { ContenidoItem, ContenidoSede, EstadoFoto } from "../types";
 import {
   CONTENIDO_SEDE_LABELS,
   CONTENIDO_TIPO_LABELS,
@@ -8,6 +8,7 @@ import {
   ESTADO_FOTO_COLORS,
   ESTADO_FOTO_LABELS,
 } from "../types";
+import { ContenidoModal } from "./ContenidoModal";
 
 type Props = {
   items: ContenidoItem[];
@@ -49,6 +50,7 @@ export function ContenidoView({ items, loading, error, onUpdate, onDelete }: Pro
   const now = new Date();
   const [mes, setMes] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
   const [sede, setSede] = useState<ContenidoSede | "todas">("todas");
+  const [viewing, setViewing] = useState<ContenidoItem | null>(null);
 
   if (loading) {
     return <div className="app-loading">Cargando calendario de contenido…</div>;
@@ -171,12 +173,20 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
             </thead>
             <tbody>
               {filtrados.map((item) => (
-                <tr key={item.id} className={isAtrasado(item) ? "contenido-row--atrasado" : ""}>
+                <tr
+                  key={item.id}
+                  className={isAtrasado(item) ? "contenido-row--atrasado" : ""}
+                  onClick={() => setViewing(item)}
+                  style={{ cursor: "pointer" }}
+                >
                   <td>{formatFecha(item.fecha)}</td>
                   <td>{CONTENIDO_SEDE_LABELS[item.sede]}</td>
-                  <td>{item.etiqueta}</td>
-                  <td>{CONTENIDO_TIPO_LABELS[item.tipo]}</td>
                   <td>
+                    {item.etiqueta}
+                    {item.caption && <span className="contenido-has-copy" title="Tiene copy cargado"> 📝</span>}
+                  </td>
+                  <td>{CONTENIDO_TIPO_LABELS[item.tipo]}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <div className="contenido-estado-cell">
                       <Badge label={ESTADO_FOTO_LABELS[item.estadoFoto]} color={ESTADO_FOTO_COLORS[item.estadoFoto]} />
                       {item.estadoFoto !== "aprobada" && (
@@ -190,16 +200,16 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
                       )}
                     </div>
                   </td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <div className="contenido-estado-cell">
                       <Badge label={ESTADO_COPY_LABELS[item.estadoCopy]} color={ESTADO_COPY_COLORS[item.estadoCopy]} />
                       {item.estadoCopy !== "aprobado" && (
                         <button
                           type="button"
                           className="contenido-approve-btn"
-                          onClick={() => onUpdate(item.id, { estadoCopy: "aprobado" as EstadoCopy })}
+                          onClick={() => setViewing(item)}
                         >
-                          ✅ Aprobar
+                          👀 Ver y aprobar
                         </button>
                       )}
                     </div>
@@ -210,7 +220,7 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
                       color={item.publicado ? "#2fbf5f" : "#8b95a5"}
                     />
                   </td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       className="tasks-item-delete"
@@ -226,6 +236,15 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
             </tbody>
           </table>
         </div>
+      )}
+
+      {viewing && (
+        <ContenidoModal
+          item={viewing}
+          onClose={() => setViewing(null)}
+          onSave={(id, patch) => onUpdate(id, patch)}
+          onDelete={onDelete}
+        />
       )}
     </div>
   );
