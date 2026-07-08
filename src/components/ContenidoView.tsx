@@ -169,6 +169,7 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
                 <th>Copy</th>
                 <th>Publicado</th>
                 <th />
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -219,6 +220,15 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
                       label={item.publicado ? "Publicado" : "Pendiente"}
                       color={item.publicado ? "#2fbf5f" : "#8b95a5"}
                     />
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      className="contenido-approve-btn"
+                      onClick={() => setViewing(item)}
+                    >
+                      👁 Ver
+                    </button>
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
                     <button
