@@ -1759,6 +1759,28 @@ body {
   border-color: var(--primary);
 }
 
+.list-sort-btn {
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.list-sort-btn:hover {
+  border-color: var(--primary);
+}
+
+.list-sort-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--bg);
+}
+
 .contacts-count {
   font-size: 0.8rem;
   color: var(--text-muted);

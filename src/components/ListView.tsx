@@ -134,16 +134,22 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
             <option key={e} value={e}>{ESTADO_CONVERSACION_LABELS[e]}</option>
           ))}
         </select>
-        <select
-          className="list-sort-select"
-          value={sortMode}
-          onChange={(e) => setSortMode(e.target.value as SortMode)}
-          title="Ordenar"
+        <button
+          type="button"
+          className="list-sort-btn"
+          onClick={() => setSortMode(sortMode === "antiguos" ? "recientes" : "antiguos")}
+          title="Alternar orden por fecha de creación"
         >
-          <option value="recientes">Más recientes primero</option>
-          <option value="antiguos">Más antiguos primero</option>
-          <option value="recontactar">Para recontactar</option>
-        </select>
+          {sortMode === "antiguos" ? "↓ Más reciente primero" : "↑ Más antiguo primero"}
+        </button>
+        <button
+          type="button"
+          className={`list-sort-btn${sortMode === "recontactar" ? " active" : ""}`}
+          onClick={() => setSortMode(sortMode === "recontactar" ? "recientes" : "recontactar")}
+          title="Ordenar por prioridad de recontacto"
+        >
+          📞 Para recontactar
+        </button>
         <span className="contacts-count">
           {filtered.length !== leads.length
             ? `${filtered.length} de ${leads.length}`
