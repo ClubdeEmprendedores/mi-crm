@@ -29,7 +29,7 @@ type Props = {
   onTogglePriority: (id: string, prioridad: boolean) => void;
 };
 
-type SortMode = "recientes" | "recontactar";
+type SortMode = "recientes" | "antiguos" | "recontactar";
 type StageFilter = Stage | "todas";
 type ConversacionFilter = EstadoConversacion | "todas";
 
@@ -62,6 +62,9 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
       const at = aFecha ? new Date(aFecha).getTime() : -1;
       const bt = bFecha ? new Date(bFecha).getTime() : -1;
       return at - bt;
+    }
+    if (sortMode === "antiguos") {
+      return new Date(a.creadoEn).getTime() - new Date(b.creadoEn).getTime();
     }
     return new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime();
   });
@@ -137,7 +140,8 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
           onChange={(e) => setSortMode(e.target.value as SortMode)}
           title="Ordenar"
         >
-          <option value="recientes">Más recientes</option>
+          <option value="recientes">Más recientes primero</option>
+          <option value="antiguos">Más antiguos primero</option>
           <option value="recontactar">Para recontactar</option>
         </select>
         <span className="contacts-count">

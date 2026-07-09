@@ -37,7 +37,7 @@ Las credenciales están en `.env` (no commitear):
 | etapa             | etapa            | Ver etapas abajo                                 |
 | creado_en         | creadoEn         | Timestamp ISO                                    |
 | contactado_en     | contactadoEn     | Cuándo se contactó por primera vez               |
-| propuesta         | propuesta        | "sanfer" / "santelmo" / "palermo"                |
+| propuesta         | propuesta        | "sanfer" / "santelmo" / "ambas"                  |
 | sede              | sede             | "sanfer" / "santelmo" (miembros activos)         |
 | contact_id        | contactId        | FK a tabla `contacts` (si existe)                |
 | motivo_baja       | motivoBaja       | Por qué se fue (exmiembro/perdido)               |
