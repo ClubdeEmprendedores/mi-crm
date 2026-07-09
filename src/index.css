@@ -768,6 +768,11 @@ body {
   white-space: nowrap;
 }
 
+.list-dias-badge {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
 .list-stage-cell {
   display: flex;
   flex-direction: column;

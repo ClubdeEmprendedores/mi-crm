@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { Lead, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
 import {
+  diasDesde,
   ESTADO_CONVERSACION_COLORS,
   ESTADO_CONVERSACION_LABELS,
   ESTADOS_CONVERSACION,
@@ -275,6 +276,11 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
                   <span>
                     {ultimo ? `${ultimo.quien === "yo" ? "Vos" : ultimo.quien === "ellos" ? "Ellos" : ""}: ${formatDate(ultimo.fecha)}` : "—"}
                   </span>
+                  {ultimo && (
+                    <span className="list-dias-badge">
+                      {diasDesde(ultimo.fecha) === 0 ? "Hoy" : `${diasDesde(ultimo.fecha)} días`}
+                    </span>
+                  )}
                   {ultimo?.texto && (
                     <span className="list-msg-preview" title={ultimo.texto}>
                       "{truncate(ultimo.texto, 40)}"

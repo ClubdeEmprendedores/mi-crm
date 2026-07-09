@@ -91,6 +91,12 @@ export function getEstadoConversacion(
   return "revisar";
 }
 
+/** Días enteros transcurridos entre una fecha ISO y ahora. */
+export function diasDesde(iso: string): number {
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
 export function countPorEstado(leads: Lead[], estados: EstadoConversacion[]): number {
   const set = new Set(estados);
   return leads.filter((l) => set.has(getEstadoConversacion(l))).length;

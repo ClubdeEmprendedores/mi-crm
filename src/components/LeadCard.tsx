@@ -1,6 +1,7 @@
 import type { Lead } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS } from "../types";
 import {
+  diasDesde,
   ESTADO_CONVERSACION_COLORS,
   ESTADO_CONVERSACION_LABELS,
   getEstadoConversacion,
@@ -109,6 +110,8 @@ export function LeadCard({ lead, onClick, onDragStart, onDragEnd, onSendWhatsapp
       {ultimo && (
         <p className="lead-card-meta">
           {ultimo.quien === "yo" ? "Vos" : ultimo.quien === "ellos" ? "Ellos" : "Últ."}: {formatShortDate(ultimo.fecha)}
+          {" · "}
+          {diasDesde(ultimo.fecha) === 0 ? "Hoy" : `${diasDesde(ultimo.fecha)} días`}
           {ultimo.texto && <span className="lead-card-msg-preview"> — "{truncate(ultimo.texto, 60)}"</span>}
         </p>
       )}
