@@ -18,6 +18,8 @@ type Props = {
 const ESTADOS_FOTO: EstadoFoto[] = ["pendiente", "recibida", "aprobada"];
 const ESTADOS_COPY: EstadoCopy[] = ["pendiente", "borrador", "aprobado"];
 
+const isVideoUrl = (url: string) => /\.(mp4|mov|webm)(\?|$)/i.test(url);
+
 export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
   const [lightbox, setLightbox] = useState(false);
   useEscapeKey(() => (lightbox ? setLightbox(false) : onClose()));
@@ -90,15 +92,24 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
         <form id="contenido-form" onSubmit={handleSubmit} className="modal-form">
           <div className="modal-body">
             {form.imageUrl ? (
-              <button
-                type="button"
-                className="contenido-modal-preview-btn"
-                onClick={() => setLightbox(true)}
-                title="Ver en pantalla completa"
-              >
-                <img src={form.imageUrl} alt="" className="contenido-modal-preview" />
-                <span className="contenido-modal-preview-hint">🔍 Ver en pantalla completa</span>
-              </button>
+              isVideoUrl(form.imageUrl) ? (
+                <video
+                  src={form.imageUrl}
+                  className="contenido-modal-preview"
+                  controls
+                  playsInline
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="contenido-modal-preview-btn"
+                  onClick={() => setLightbox(true)}
+                  title="Ver en pantalla completa"
+                >
+                  <img src={form.imageUrl} alt="" className="contenido-modal-preview" />
+                  <span className="contenido-modal-preview-hint">🔍 Ver en pantalla completa</span>
+                </button>
+              )
             ) : (
               <p className="import-empty">Sin imagen de referencia cargada todavía.</p>
             )}
