@@ -11,10 +11,12 @@ import { MetricsView } from "./components/MetricsView";
 import { ReporteMensualModal } from "./components/ReporteMensualModal";
 import { RetargetingModal } from "./components/RetargetingModal";
 import { TasksView } from "./components/TasksView";
+import { WhatsAppBotView } from "./components/WhatsAppBotView";
 import { useContacts } from "./hooks/useContacts";
 import { useContenido } from "./hooks/useContenido";
 import { useLeads } from "./hooks/useLeads";
 import { useTasks } from "./hooks/useTasks";
+import { useWspConversaciones } from "./hooks/useWspConversaciones";
 import type { Contact, Lead, ViewMode } from "./types";
 import { leadsParaRecalcular } from "./utils/conversacion";
 import {
@@ -43,6 +45,11 @@ export default function App() {
     items: contenidoItems, loading: contenidoLoading, error: contenidoError, clearError: clearContenidoError,
     updateItem: updateContenidoItem, deleteItem: deleteContenidoItem,
   } = useContenido();
+  const {
+    conversaciones: wspConversaciones, mensajesPorTelefono: wspMensajes,
+    loading: wspLoading, error: wspError, sending: wspSending,
+    clearError: clearWspError, cargarMensajes: cargarWspMensajes, enviarManual: enviarWspManual,
+  } = useWspConversaciones();
 
   const [view, setView] = useState<ViewMode>("kanban");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -64,10 +71,14 @@ export default function App() {
   );
   const isTasksMigrationError = isMigrationError(tasksError);
   const isContenidoMigrationError = isMigrationError(contenidoError);
+  const isWspMigrationError = isMigrationError(wspError);
   const appError = leadsError || contactsError
     || (isTasksMigrationError ? null : tasksError)
-    || (isContenidoMigrationError ? null : contenidoError);
-  const clearError = () => { clearLeadsError(); clearContactsError(); clearTasksError(); clearContenidoError(); };
+    || (isContenidoMigrationError ? null : contenidoError)
+    || (isWspMigrationError ? null : wspError);
+  const clearError = () => {
+    clearLeadsError(); clearContactsError(); clearTasksError(); clearContenidoError(); clearWspError();
+  };
 
   // Auto-dismiss error toast after 6s
   useEffect(() => {
@@ -111,11 +122,13 @@ export default function App() {
   const isTasksView = view === "tareas";
   const isMetricsView = view === "metricas";
   const isContenidoView = view === "contenido";
+  const isWspBotView = view === "wspbot";
 
   const pendingTasksCount = tasks.filter((t) => !t.hecha).length;
   const pendingContenidoCount = contenidoItems.filter(
     (i) => !i.publicado && (i.estadoFoto !== "aprobada" || i.estadoCopy !== "aprobado"),
   ).length;
+  const pendingWspCount = wspConversaciones.filter((c) => c.leadListo && !c.atendidoPorHumano).length;
 
   const handleViewChange = (v: ViewMode) => {
     setView(v);
@@ -267,9 +280,19 @@ export default function App() {
             📅 Contenido
             {pendingContenidoCount > 0 && <span className="tab-badge">{pendingContenidoCount}</span>}
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "wspbot"}
+            className={view === "wspbot" ? "active" : ""}
+            onClick={() => handleViewChange("wspbot")}
+          >
+            🤖 WhatsApp Bot
+            {pendingWspCount > 0 && <span className="tab-badge">{pendingWspCount}</span>}
+          </button>
         </div>
 
-        {!isTasksView && !isMetricsView && !isContenidoView && (
+        {!isTasksView && !isMetricsView && !isContenidoView && !isWspBotView && (
           <div className="header-actions">
             <div className="export-wrap" ref={exportRef}>
               <button
@@ -394,6 +417,16 @@ export default function App() {
       <main className="app-main">
         {view === "metricas" ? (
           <MetricsView leads={leads} />
+        ) : view === "wspbot" ? (
+          <WhatsAppBotView
+            conversaciones={wspConversaciones}
+            mensajesPorTelefono={wspMensajes}
+            loading={wspLoading}
+            error={wspError}
+            sending={wspSending}
+            onSelect={cargarWspMensajes}
+            onEnviar={enviarWspManual}
+          />
         ) : view === "contenido" ? (
           <ContenidoView
             items={contenidoItems}

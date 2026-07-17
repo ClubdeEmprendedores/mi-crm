@@ -78,7 +78,34 @@ export type ContenidoItem = {
   actualizadoEn: string;
 };
 
-export type ViewMode = "kanban" | "lista" | "contactos" | "tareas" | "metricas" | "contenido";
+export type ViewMode = "kanban" | "lista" | "contactos" | "tareas" | "metricas" | "contenido" | "wspbot";
+
+export type WspMensaje = {
+  id: number;
+  telefono: string;
+  direccion: "entrante" | "saliente";
+  texto: string;
+  creadoEn: string;
+};
+
+export type WspConversacion = {
+  telefono: string;
+  step: number;
+  origen: string;
+  producto?: string;
+  nombre?: string;
+  instagram?: string;
+  otrosShowrooms?: boolean;
+  showroomsDetalle?: string;
+  tieneTiendaPropia?: boolean;
+  estadoVenta?: string;
+  tieneStock?: boolean;
+  localElegido?: string;
+  leadListo: boolean;
+  atendidoPorHumano: boolean;
+  creadoEn: string;
+  actualizadoEn: string;
+};
 
 export const STAGE_LABELS: Record<Stage, string> = {
   nuevo: "Nuevo",
