@@ -107,6 +107,7 @@ export function WhatsAppBotView({
                   <span>🏬 Otros showrooms: {conv.otrosShowrooms ? (conv.showroomsDetalle || "Sí") : "No"}</span>
                 )}
                 {conv.tieneTiendaPropia !== undefined && <span>🛒 Tienda propia: {conv.tieneTiendaPropia ? "Sí" : "No"}</span>}
+                {conv.mayorTraba && <span>🚧 Mayor traba: {conv.mayorTraba}</span>}
                 {conv.localElegido && <span>📍 Local: {conv.localElegido}</span>}
               </div>
             </div>

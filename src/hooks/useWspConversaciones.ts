@@ -12,6 +12,7 @@ type ConvRow = {
   otros_showrooms: boolean | null;
   showrooms_detalle: string | null;
   tiene_tienda_propia: boolean | null;
+  mayor_traba: string | null;
   estado_venta: string | null;
   tiene_stock: boolean | null;
   local_elegido: string | null;
@@ -40,6 +41,7 @@ function fromConvRow(row: ConvRow): WspConversacion {
     otrosShowrooms: row.otros_showrooms ?? undefined,
     showroomsDetalle: row.showrooms_detalle ?? undefined,
     tieneTiendaPropia: row.tiene_tienda_propia ?? undefined,
+    mayorTraba: row.mayor_traba ?? undefined,
     estadoVenta: row.estado_venta ?? undefined,
     tieneStock: row.tiene_stock ?? undefined,
     localElegido: row.local_elegido ?? undefined,

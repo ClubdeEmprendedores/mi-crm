@@ -98,6 +98,7 @@ export type WspConversacion = {
   otrosShowrooms?: boolean;
   showroomsDetalle?: string;
   tieneTiendaPropia?: boolean;
+  mayorTraba?: string;
   estadoVenta?: string;
   tieneStock?: boolean;
   localElegido?: string;
