@@ -38,6 +38,19 @@ function isAtrasado(item: ContenidoItem) {
   return parseFechaLocal(item.fecha) < hoy;
 }
 
+function estaAprobadoYPublicado(item: ContenidoItem) {
+  return item.estadoFoto === "aprobada" && item.estadoCopy === "aprobado" && item.publicado;
+}
+
+function ordenarPorAprobacion(items: ContenidoItem[]): ContenidoItem[] {
+  return [...items].sort((a, b) => {
+    const resueltoA = estaAprobadoYPublicado(a) ? 1 : 0;
+    const resueltoB = estaAprobadoYPublicado(b) ? 1 : 0;
+    if (resueltoA !== resueltoB) return resueltoA - resueltoB;
+    return a.fecha.localeCompare(b.fecha);
+  });
+}
+
 function Badge({ label, color }: { label: string; color: string }) {
   return (
     <span className="contenido-badge" style={{ background: `${color}26`, color, border: `1px solid ${color}55` }}>
@@ -110,6 +123,8 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
   if (!meses.includes(mes)) meses.push(mes);
   meses.sort();
 
+  const ordenados = ordenarPorAprobacion(filtrados);
+
   return (
     <div className="contenido-wrap">
       <div className="contenido-filters">
@@ -173,7 +188,7 @@ CREATE POLICY "contenido_calendario_all" ON contenido_calendario
               </tr>
             </thead>
             <tbody>
-              {filtrados.map((item) => (
+              {ordenados.map((item) => (
                 <tr
                   key={item.id}
                   className={isAtrasado(item) ? "contenido-row--atrasado" : ""}
