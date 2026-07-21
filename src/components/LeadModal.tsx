@@ -320,7 +320,6 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
               <input
                 value={form.nombre}
                 onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                required
                 autoFocus
               />
             </label>
