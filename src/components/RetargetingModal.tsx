@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Lead, Stage } from "../types";
 import { PROPUESTA_LABELS, STAGES, STAGE_LABELS } from "../types";
 import { useEscapeKey } from "../hooks/useEscapeKey";
@@ -15,6 +15,8 @@ import { formatShortDate } from "../utils/format";
 import { normalizeSearch } from "../utils/text";
 import {
   aplicarPlantilla,
+  BONIFICACION_SANTELMO_TAG,
+  bonificacionSanTelmoMensajes,
   mensajeEsperandoTuRespuesta,
   mensajePrimerContacto,
   mensajeSinRespuestaDeEllos,
@@ -42,6 +44,15 @@ function todayTag() {
   return `📣 Campaña ${dd}-${mm}`;
 }
 
+/** Con rotación activa reparte una de las 6 variantes según la posición del lead en el filtro; si no, usa la plantilla única. */
+function mensajeParaLead(nombre: string, indexEnFiltro: number, rotarVariantes: boolean, mensaje: string): string {
+  if (rotarVariantes) {
+    const variantes = bonificacionSanTelmoMensajes;
+    return variantes[indexEnFiltro % variantes.length](nombre);
+  }
+  return aplicarPlantilla(mensaje, nombre);
+}
+
 type QuickSendCardProps = {
   lead: Lead;
   position: number;
@@ -58,11 +69,12 @@ function QuickSendCard({ lead, position, total, defaultMessage, onSend, onSkip, 
   const [text, setText] = useState(defaultMessage);
   const estado = getEstadoConversacion(lead);
   const ultimo = getUltimoContacto(lead);
+  const sendLinkRef = useRef<HTMLAnchorElement>(null);
 
   return (
     <div className="quick-send-card">
       <div className="quick-send-progress">
-        Lead {position} de {total}
+        Lead {position} de {total} · Ctrl+Enter para enviar y pasar al siguiente
       </div>
       <div className="quick-send-lead">
         <h3>{lead.nombre}</h3>
@@ -96,6 +108,12 @@ function QuickSendCard({ lead, position, total, defaultMessage, onSend, onSkip, 
         rows={4}
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            sendLinkRef.current?.click();
+          }
+        }}
       />
 
       <div className="quick-send-actions">
@@ -106,11 +124,13 @@ function QuickSendCard({ lead, position, total, defaultMessage, onSend, onSkip, 
           Saltar →
         </button>
         <a
+          ref={sendLinkRef}
           className="btn btn-secondary whatsapp-send quick-send-btn"
           href={whatsappUrl(lead.telefono, text)}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => onSend(lead, text)}
+          title="Ctrl+Enter para enviar y pasar al siguiente"
         >
           💬 Enviar y siguiente
         </a>
@@ -134,6 +154,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
   const [mensaje, setMensaje] = useState(
     "¡Hola {nombre}! Soy Mati, de Club de Emprendedores. ¿Cómo va tu emprendimiento? Te cuento cómo podés tener tu espacio en nuestro showroom.",
   );
+  const [rotarVariantes, setRotarVariantes] = useState(false);
   const [sent, setSent] = useState<Set<string>>(new Set());
   const [quickMode, setQuickMode] = useState(false);
   const [quickIndex, setQuickIndex] = useState(0);
@@ -194,6 +215,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
   const queue = useMemo(() => matched.filter((l) => !sent.has(l.id)), [matched, sent]);
   const currentIndex = Math.min(quickIndex, Math.max(queue.length - 1, 0));
   const currentLead = queue[currentIndex];
+  const currentLeadIndexEnFiltro = currentLead ? matched.findIndex((l) => l.id === currentLead.id) : -1;
 
   const handleSend = (lead: Lead) => {
     onSendWhatsapp(lead.id);
@@ -327,26 +349,51 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm whatsapp-template-btn"
-                  onClick={() => setMensaje(mensajePrimerContacto("{nombre}"))}
+                  onClick={() => { setMensaje(mensajePrimerContacto("{nombre}")); setRotarVariantes(false); }}
                 >
                   🆕 Primer contacto
                 </button>
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm whatsapp-template-btn"
-                  onClick={() => setMensaje(mensajeSinRespuestaDeEllos("{nombre}"))}
+                  onClick={() => { setMensaje(mensajeSinRespuestaDeEllos("{nombre}")); setRotarVariantes(false); }}
                 >
                   🔴 No respondió
                 </button>
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm whatsapp-template-btn"
-                  onClick={() => setMensaje(mensajeEsperandoTuRespuesta("{nombre}"))}
+                  onClick={() => { setMensaje(mensajeEsperandoTuRespuesta("{nombre}")); setRotarVariantes(false); }}
                 >
                   🟡 Esperaba tu respuesta
                 </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm whatsapp-template-btn ${rotarVariantes ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => { setRotarVariantes(true); setTag(BONIFICACION_SANTELMO_TAG); }}
+                >
+                  🎁 Bonificación San Telmo (6 estilos)
+                </button>
               </div>
-              <textarea rows={3} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
+              {rotarVariantes ? (
+                <div className="whatsapp-box">
+                  <span className="field-label">
+                    Se reparte 1 de estas 6 variantes por lead, rotando en el orden de la lista de abajo:
+                  </span>
+                  {bonificacionSanTelmoMensajes.map((fn, i) => (
+                    <p key={i} className="quick-send-ultimo">{i + 1}. "{fn("{nombre}")}"</p>
+                  ))}
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setRotarVariantes(false)}
+                  >
+                    ✖ Volver a mensaje único
+                  </button>
+                </div>
+              ) : (
+                <textarea rows={3} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
+              )}
             </label>
           </div>
           )}
@@ -358,7 +405,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                 lead={currentLead}
                 position={currentIndex + 1}
                 total={queue.length}
-                defaultMessage={aplicarPlantilla(mensaje, currentLead.nombre)}
+                defaultMessage={mensajeParaLead(currentLead.nombre, currentLeadIndexEnFiltro, rotarVariantes, mensaje)}
                 onSend={(lead) => handleSend(lead)}
                 onSkip={() => setQuickIndex((i) => Math.min(i + 1, Math.max(queue.length - 1, 0)))}
                 onPrev={() => setQuickIndex((i) => Math.max(i - 1, 0))}
@@ -385,7 +432,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                 </tr>
               </thead>
               <tbody>
-                {shown.map((lead) => {
+                {shown.map((lead, idx) => {
                   const estado = getEstadoConversacion(lead);
                   const ultimo = getUltimoContacto(lead);
                   return (
@@ -422,7 +469,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                     <td>
                       <a
                         className="lead-card-whatsapp campaign-wa"
-                        href={whatsappUrl(lead.telefono, aplicarPlantilla(mensaje, lead.nombre))}
+                        href={whatsappUrl(lead.telefono, mensajeParaLead(lead.nombre, idx, rotarVariantes, mensaje))}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => handleSend(lead)}

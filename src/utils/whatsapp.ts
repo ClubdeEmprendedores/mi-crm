@@ -112,3 +112,37 @@ export function primerNombre(nombre: string): string {
 export function aplicarPlantilla(plantilla: string, nombre: string): string {
   return plantilla.replace(/\{nombre\}/gi, primerNombre(nombre));
 }
+
+export const BONIFICACION_SANTELMO_TAG = "🎁 Bonificación San Telmo";
+
+/**
+ * 6 variantes del mensaje de lanzamiento de San Telmo (bonificación en el fee
+ * de ingreso a los primeros 15 que respondan). Se reparten una por lead para
+ * que la tanda no se sienta como el mismo texto copy-pasteado.
+ */
+export const bonificacionSanTelmoMensajes: Array<(nombre: string) => string> = [
+  (nombre) => {
+    const saludo = primerNombre(nombre) ? `¡Hola ${primerNombre(nombre)}!` : "¡Hola!";
+    return `${saludo} Soy Mati, de Club de Emprendedores. Desde mayo tenemos también sede en San Telmo, mucho más cerca de Capital. A los primeros 15 que nos escriban esta semana les hacemos una bonificación en el fee de ingreso. ¿Te copa la idea de tener tu espacio ahí?`;
+  },
+  (nombre) => {
+    const saludo = primerNombre(nombre) ? `Hola ${primerNombre(nombre)},` : "Hola,";
+    return `${saludo} te escribo del Club de Emprendedores. Abrimos un segundo local en San Telmo en mayo y estamos bonificando el fee de ingreso a los primeros 15 emprendedores que respondan. ¿Querés que te cuente cómo funciona?`;
+  },
+  (nombre) => {
+    const saludo = primerNombre(nombre) ? `${primerNombre(nombre)}, ¡hola!` : "¡Hola!";
+    return `${saludo} Soy Mati, del Club de Emprendedores. Novedad: desde mayo estamos también en San Telmo. Como lanzamiento, bonificamos el fee de ingreso a los primeros 15 que nos contesten. Si seguís con tu emprendimiento, contame y te paso los detalles.`;
+  },
+  (nombre) => {
+    const saludo = primerNombre(nombre) ? `¡Hola ${primerNombre(nombre)}!` : "¡Hola!";
+    return `${saludo} Club de Emprendedores por acá. Tenemos un espacio nuevo en San Telmo desde mayo, más cerca de Capital, y por estos días bonificamos el fee de ingreso a los primeros 15 en responder. ¿Seguís emprendiendo? Te cuento más si te interesa.`;
+  },
+  (nombre) => {
+    const saludo = primerNombre(nombre) ? `Hola ${primerNombre(nombre)}!` : "¡Hola!";
+    return `${saludo} Soy Mati, de Club de Emprendedores. Te escribo porque abrimos San Telmo en mayo, un showroom nuevo más accesible desde Capital, y estamos bonificando el fee de ingreso a los primeros 15 emprendedores que nos escriban. ¿Te gustaría conocer más?`;
+  },
+  (nombre) => {
+    const saludo = primerNombre(nombre) ? `${primerNombre(nombre)}, ¿cómo estás?` : "¿Cómo estás?";
+    return `${saludo} Soy Mati, del Club de Emprendedores. Quería avisarte que desde mayo sumamos sede en San Telmo, y estamos bonificando el fee de ingreso a los primeros 15 que respondan este mensaje. Si seguís con tu marca, contame y vemos si te sirve.`;
+  },
+];
