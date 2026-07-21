@@ -153,7 +153,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.nombre.trim()) return;
+    if (!form.nombre.trim() && !form.telefono.trim() && !form.instagram.trim() && !form.empresa.trim()) return;
     const autoContactadoEn =
       form.etapa === "contactado" && !form.contactadoEn
         ? new Date().toISOString()
@@ -197,7 +197,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
           .slice(0, 6)
       : [];
 
-  const canSave = !!form.nombre.trim();
+  const canSave = !!(form.nombre.trim() || form.telefono.trim() || form.instagram.trim() || form.empresa.trim());
 
   return (
     <div className="modal-overlay" onClick={onClose} role="presentation">
