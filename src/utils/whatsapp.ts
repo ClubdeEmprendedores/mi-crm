@@ -53,6 +53,13 @@ export function mensajeSinRespuestaDeEllos(nombre: string): string {
   return `${saludo} ${INTRO_CLUB} Te escribí hace un tiempo y no sé si llegaste a ver el mensaje. ¿Seguís con tu emprendimiento? Contame y te cuento cómo tener tu espacio con nosotros.`;
 }
 
+/** Ellos escribieron primero pidiendo info, les respondiste (saludo) y no volvieron a escribir. */
+export function mensajeNuncaRespondioSaludo(nombre: string): string {
+  const primerNombre = nombre.trim().split(/\s+/)[0] || "";
+  const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
+  return `${saludo} Soy Mati, de Club de Emprendedores. Hace un tiempo nos escribiste preguntando por el Club y te pasamos la info, pero no supimos más de vos 😊 ¿Seguís con tu emprendimiento? Contame y vemos si te sirve un espacio en San Fernando o San Telmo.`;
+}
+
 /** Último mensaje fue de ellos: retomar la conversación que quedó pendiente. */
 export function mensajeEsperandoTuRespuesta(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";

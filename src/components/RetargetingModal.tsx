@@ -10,6 +10,7 @@ import {
   getEffectiveUltimoMensaje,
   getEstadoConversacion,
   getUltimoContacto,
+  iniciadoPorEllos,
 } from "../utils/conversacion";
 import { formatShortDate } from "../utils/format";
 import { normalizeSearch } from "../utils/text";
@@ -18,6 +19,7 @@ import {
   BONIFICACION_SANTELMO_TAG,
   bonificacionSanTelmoMensajes,
   mensajeEsperandoTuRespuesta,
+  mensajeNuncaRespondioSaludo,
   mensajePrimerContacto,
   mensajeSinRespuestaDeEllos,
   whatsappUrl,
@@ -147,6 +149,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
     new Set(ESTADOS_CONVERSACION),
   );
   const [soloFrios, setSoloFrios] = useState(true);
+  const [soloIniciadoPorEllos, setSoloIniciadoPorEllos] = useState(false);
   const [diasFrio, setDiasFrio] = useState(14);
   const [excludeTagged, setExcludeTagged] = useState(true);
   const [search, setSearch] = useState("");
@@ -185,6 +188,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
         if (l.noRecontactar) return false;
         if (!stageFilter.has(l.etapa)) return false;
         if (!conversacionFilter.has(getEstadoConversacion(l))) return false;
+        if (soloIniciadoPorEllos && !iniciadoPorEllos(l)) return false;
         if (excludeTagged && tag && l.tags.includes(tag)) return false;
         if (soloFrios) {
           const fecha = getEffectiveUltimoMensaje(l);
@@ -208,7 +212,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
         const bt = bFecha ? new Date(bFecha).getTime() : -1;
         return at - bt;
       });
-  }, [leads, stageFilter, conversacionFilter, soloFrios, diasFrio, excludeTagged, tag, search]);
+  }, [leads, stageFilter, conversacionFilter, soloFrios, soloIniciadoPorEllos, diasFrio, excludeTagged, tag, search]);
 
   const shown = matched.slice(0, PREVIEW_LIMIT);
 
@@ -327,6 +331,15 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
             <label className="field-checkbox">
               <input
                 type="checkbox"
+                checked={soloIniciadoPorEllos}
+                onChange={(e) => setSoloIniciadoPorEllos(e.target.checked)}
+              />
+              Solo quienes escribieron primero pidiendo info (no contacto en frío tuyo)
+            </label>
+
+            <label className="field-checkbox">
+              <input
+                type="checkbox"
                 checked={excludeTagged}
                 onChange={(e) => setExcludeTagged(e.target.checked)}
               />
@@ -359,6 +372,17 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                   onClick={() => { setMensaje(mensajeSinRespuestaDeEllos("{nombre}")); setRotarVariantes(false); }}
                 >
                   🔴 No respondió
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm whatsapp-template-btn"
+                  onClick={() => {
+                    setMensaje(mensajeNuncaRespondioSaludo("{nombre}"));
+                    setRotarVariantes(false);
+                    setSoloIniciadoPorEllos(true);
+                  }}
+                >
+                  📩 Escribió y no respondió el saludo
                 </button>
                 <button
                   type="button"

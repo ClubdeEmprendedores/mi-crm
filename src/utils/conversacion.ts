@@ -1,4 +1,4 @@
-import type { Lead } from "../types";
+import type { HistorialEntry, Lead } from "../types";
 
 export type EstadoConversacion =
   | "nunca"
@@ -89,6 +89,23 @@ export function getEstadoConversacion(
   if (ultimo.quien === "ellos") return "esperando_tu_respuesta";
   if (ultimo.quien === "yo") return "sin_respuesta_de_ellos";
   return "revisar";
+}
+
+/**
+ * True si la conversación la arrancó el lead (primera entrada del historial es "ellos"):
+ * escribió pidiendo info antes de que vos le respondieras. Sirve para distinguir, dentro
+ * de "sin_respuesta_de_ellos", a quienes te contactaron primero de a quienes saliste a
+ * buscar vos en frío.
+ */
+export function iniciadoPorEllos(lead: Pick<Lead, "historial">): boolean {
+  let first: HistorialEntry | null = null;
+  for (const entry of lead.historial) {
+    if (!entry.fecha) continue;
+    if (!first || new Date(entry.fecha).getTime() < new Date(first.fecha).getTime()) {
+      first = entry;
+    }
+  }
+  return first !== null && parseSpeaker(first.nota) === "ellos";
 }
 
 /** Días enteros transcurridos entre una fecha ISO y ahora. */
