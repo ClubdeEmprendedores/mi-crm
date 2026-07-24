@@ -380,6 +380,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                     setMensaje(mensajeNuncaRespondioSaludo("{nombre}"));
                     setRotarVariantes(false);
                     setSoloIniciadoPorEllos(true);
+                    setConversacionFilter(new Set(["sin_respuesta_de_ellos"]));
                   }}
                 >
                   📩 Escribió y no respondió el saludo
