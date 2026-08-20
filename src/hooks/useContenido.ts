@@ -12,6 +12,7 @@ type DbRow = {
   estado_copy: EstadoCopy;
   publicado: boolean;
   image_url: string | null;
+  image_urls: string[] | null;
   caption: string | null;
   notas: string | null;
   creado_en: string;
@@ -27,11 +28,17 @@ type Patch = Partial<{
   estadoCopy: EstadoCopy;
   publicado: boolean;
   imageUrl: string;
+  imageUrls: string[];
   caption: string;
   notas: string;
 }>;
 
 function fromDb(row: DbRow): ContenidoItem {
+  const imageUrls = row.image_urls && row.image_urls.length > 0
+    ? row.image_urls
+    : row.image_url
+      ? [row.image_url]
+      : [];
   return {
     id: row.id,
     fecha: row.fecha,
@@ -41,7 +48,8 @@ function fromDb(row: DbRow): ContenidoItem {
     estadoFoto: row.estado_foto,
     estadoCopy: row.estado_copy,
     publicado: row.publicado,
-    imageUrl: row.image_url ?? undefined,
+    imageUrl: imageUrls[0] ?? undefined,
+    imageUrls,
     caption: row.caption ?? undefined,
     notas: row.notas ?? undefined,
     creadoEn: row.creado_en,
@@ -58,7 +66,12 @@ function toDbPatch(patch: Patch) {
   if (patch.estadoFoto !== undefined) out.estado_foto = patch.estadoFoto;
   if (patch.estadoCopy !== undefined) out.estado_copy = patch.estadoCopy;
   if (patch.publicado !== undefined) out.publicado = patch.publicado;
-  if (patch.imageUrl !== undefined) out.image_url = patch.imageUrl;
+  if (patch.imageUrls !== undefined) {
+    out.image_urls = patch.imageUrls;
+    out.image_url = patch.imageUrls[0] ?? null;
+  } else if (patch.imageUrl !== undefined) {
+    out.image_url = patch.imageUrl;
+  }
   if (patch.caption !== undefined) out.caption = patch.caption;
   if (patch.notas !== undefined) out.notas = patch.notas;
   out.actualizado_en = new Date().toISOString();

@@ -92,6 +92,7 @@ CREATE TABLE contenido_calendario (
   estado_copy    TEXT NOT NULL DEFAULT 'pendiente',
   publicado      BOOLEAN NOT NULL DEFAULT FALSE,
   image_url      TEXT,
+  image_urls     JSONB NOT NULL DEFAULT '[]'::jsonb,
   caption        TEXT,
   notas          TEXT,
   creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW(),

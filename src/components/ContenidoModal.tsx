@@ -21,8 +21,9 @@ const ESTADOS_COPY: EstadoCopy[] = ["pendiente", "borrador", "aprobado"];
 const isVideoUrl = (url: string) => /\.(mp4|mov|webm)(\?|$)/i.test(url);
 
 export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
-  const [lightbox, setLightbox] = useState(false);
-  useEscapeKey(() => (lightbox ? setLightbox(false) : onClose()));
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [nuevaFoto, setNuevaFoto] = useState("");
+  useEscapeKey(() => (lightboxIndex !== null ? setLightboxIndex(null) : onClose()));
 
   const [form, setForm] = useState({
     etiqueta: item.etiqueta,
@@ -32,7 +33,7 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
     estadoFoto: item.estadoFoto,
     estadoCopy: item.estadoCopy,
     publicado: item.publicado,
-    imageUrl: item.imageUrl ?? "",
+    imageUrls: item.imageUrls,
     caption: item.caption ?? "",
     notas: item.notas ?? "",
   });
@@ -46,11 +47,33 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
       estadoFoto: item.estadoFoto,
       estadoCopy: item.estadoCopy,
       publicado: item.publicado,
-      imageUrl: item.imageUrl ?? "",
+      imageUrls: item.imageUrls,
       caption: item.caption ?? "",
       notas: item.notas ?? "",
     });
+    setNuevaFoto("");
   }, [item]);
+
+  const agregarFoto = () => {
+    const url = nuevaFoto.trim();
+    if (!url) return;
+    setForm((f) => ({ ...f, imageUrls: [...f.imageUrls, url] }));
+    setNuevaFoto("");
+  };
+
+  const quitarFoto = (idx: number) => {
+    setForm((f) => ({ ...f, imageUrls: f.imageUrls.filter((_, i) => i !== idx) }));
+  };
+
+  const moverFoto = (idx: number, dir: -1 | 1) => {
+    setForm((f) => {
+      const next = [...f.imageUrls];
+      const target = idx + dir;
+      if (target < 0 || target >= next.length) return f;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return { ...f, imageUrls: next };
+    });
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -62,7 +85,7 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
       estadoFoto: form.estadoFoto,
       estadoCopy: form.estadoCopy,
       publicado: form.publicado,
-      imageUrl: form.imageUrl || undefined,
+      imageUrls: form.imageUrls,
       caption: form.caption || undefined,
       notas: form.notas || undefined,
     });
@@ -91,28 +114,51 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
 
         <form id="contenido-form" onSubmit={handleSubmit} className="modal-form">
           <div className="modal-body">
-            {form.imageUrl ? (
-              isVideoUrl(form.imageUrl) ? (
-                <video
-                  src={form.imageUrl}
-                  className="contenido-modal-preview"
-                  controls
-                  playsInline
-                />
-              ) : (
-                <button
-                  type="button"
-                  className="contenido-modal-preview-btn"
-                  onClick={() => setLightbox(true)}
-                  title="Ver en pantalla completa"
-                >
-                  <img src={form.imageUrl} alt="" className="contenido-modal-preview" />
-                  <span className="contenido-modal-preview-hint">🔍 Ver en pantalla completa</span>
-                </button>
-              )
+            {form.imageUrls.length > 0 ? (
+              <div className="contenido-gallery">
+                {form.imageUrls.map((url, idx) => (
+                  <div key={`${url}-${idx}`} className="contenido-gallery-item">
+                    {isVideoUrl(url) ? (
+                      <video src={url} className="contenido-gallery-thumb" controls playsInline />
+                    ) : (
+                      <button
+                        type="button"
+                        className="contenido-gallery-thumb-btn"
+                        onClick={() => setLightboxIndex(idx)}
+                        title="Ver en pantalla completa"
+                      >
+                        <img src={url} alt="" className="contenido-gallery-thumb" />
+                      </button>
+                    )}
+                    <div className="contenido-gallery-item-actions">
+                      <span className="contenido-gallery-item-num">
+                        {form.imageUrls.length > 1 ? `${idx + 1}/${form.imageUrls.length}` : ""}
+                      </span>
+                      {form.imageUrls.length > 1 && (
+                        <>
+                          <button type="button" className="btn-icon" disabled={idx === 0} onClick={() => moverFoto(idx, -1)} title="Mover antes">←</button>
+                          <button type="button" className="btn-icon" disabled={idx === form.imageUrls.length - 1} onClick={() => moverFoto(idx, 1)} title="Mover después">→</button>
+                        </>
+                      )}
+                      <button type="button" className="btn-icon" onClick={() => quitarFoto(idx)} title="Quitar">×</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
               <p className="import-empty">Sin imagen de referencia cargada todavía.</p>
             )}
+            <div className="contenido-gallery-add">
+              <input
+                value={nuevaFoto}
+                placeholder="Pegar link de otra foto y sumarla al carrusel…"
+                onChange={(e) => setNuevaFoto(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); agregarFoto(); }
+                }}
+              />
+              <button type="button" className="btn btn-ghost" onClick={agregarFoto}>+ Agregar foto</button>
+            </div>
 
             <label>
               Etiqueta
@@ -154,15 +200,6 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
                   <option key={t} value={t}>{CONTENIDO_TIPO_LABELS[t]}</option>
                 ))}
               </select>
-            </label>
-
-            <label>
-              Link de referencia de la imagen (opcional)
-              <input
-                value={form.imageUrl}
-                placeholder="https://…"
-                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              />
             </label>
 
             <label>
@@ -244,21 +281,46 @@ export function ContenidoModal({ item, onClose, onSave, onDelete }: Props) {
         </form>
       </div>
 
-      {lightbox && form.imageUrl && (
+      {lightboxIndex !== null && form.imageUrls[lightboxIndex] && (
         <div
           className="contenido-lightbox"
-          onClick={(e) => { e.stopPropagation(); setLightbox(false); }}
+          onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
           role="presentation"
         >
           <button
             type="button"
             className="btn-icon contenido-lightbox-close"
-            onClick={(e) => { e.stopPropagation(); setLightbox(false); }}
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
             aria-label="Cerrar"
           >
             ×
           </button>
-          <img src={form.imageUrl} alt="" className="contenido-lightbox-img" onClick={(e) => e.stopPropagation()} />
+          {form.imageUrls.length > 1 && (
+            <button
+              type="button"
+              className="btn-icon contenido-lightbox-prev"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i! - 1 + form.imageUrls.length) % form.imageUrls.length); }}
+              aria-label="Anterior"
+            >
+              ‹
+            </button>
+          )}
+          <img
+            src={form.imageUrls[lightboxIndex]}
+            alt=""
+            className="contenido-lightbox-img"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {form.imageUrls.length > 1 && (
+            <button
+              type="button"
+              className="btn-icon contenido-lightbox-next"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i! + 1) % form.imageUrls.length); }}
+              aria-label="Siguiente"
+            >
+              ›
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -2274,6 +2274,75 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.contenido-lightbox-prev,
+.contenido-lightbox-next {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+}
+
+.contenido-lightbox-prev { left: 1.5rem; }
+.contenido-lightbox-next { right: 1.5rem; }
+
+.contenido-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.contenido-gallery-item {
+  width: calc(50% - 0.3rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.contenido-gallery-thumb-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+}
+
+.contenido-gallery-thumb {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: block;
+}
+
+.contenido-gallery-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.contenido-gallery-item-num {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-right: auto;
+}
+
+.contenido-gallery-add {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.contenido-gallery-add input {
+  flex: 1;
+}
+
 /* Mobile */
 @media (max-width: 720px) {
   .app-header {

@@ -72,6 +72,7 @@ export type ContenidoItem = {
   estadoCopy: EstadoCopy;
   publicado: boolean;
   imageUrl?: string;
+  imageUrls: string[];
   caption?: string;
   notas?: string;
   creadoEn: string;
