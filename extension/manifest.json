@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "CRM Club de Emprendedores — WhatsApp",
+  "version": "0.1.0",
+  "description": "Panel de CRM (etiquetas, notas, historial, recordatorios) superpuesto sobre WhatsApp Web.",
+  "permissions": ["storage", "alarms", "notifications"],
+  "host_permissions": ["https://qbilzmsqwcawuvuvbcvo.supabase.co/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

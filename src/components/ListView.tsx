@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { Lead, Stage } from "../types";
+import type { Lead, SedeOption, Stage } from "../types";
 import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
 import {
   diasDesde,
@@ -33,6 +33,7 @@ type Props = {
 type SortMode = "recientes" | "antiguos" | "recontactar";
 type StageFilter = Stage | "todas";
 type ConversacionFilter = EstadoConversacion | "todas";
+type SedeFilter = SedeOption | "todas" | "sin_sede";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-AR", {
@@ -47,14 +48,23 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
   const [sortMode, setSortMode] = useState<SortMode>("recientes");
   const [stageFilter, setStageFilter] = useState<StageFilter>("todas");
   const [conversacionFilter, setConversacionFilter] = useState<ConversacionFilter>("todas");
+  const [sedeFilter, setSedeFilter] = useState<SedeFilter>("todas");
+  const [soloSinTelefono, setSoloSinTelefono] = useState(false);
 
   const byStage = stageFilter === "todas" ? leads : leads.filter((l) => l.etapa === stageFilter);
   const byConversacion =
     conversacionFilter === "todas"
       ? byStage
       : byStage.filter((l) => getEstadoConversacion(l) === conversacionFilter);
+  const bySede =
+    sedeFilter === "todas"
+      ? byConversacion
+      : sedeFilter === "sin_sede"
+      ? byConversacion.filter((l) => !l.sede)
+      : byConversacion.filter((l) => l.sede === sedeFilter);
+  const byTelefono = soloSinTelefono ? bySede.filter((l) => !l.telefono.trim()) : bySede;
 
-  const sorted = [...byConversacion].sort((a, b) => {
+  const sorted = [...byTelefono].sort((a, b) => {
     const prio = Number(b.prioridad) - Number(a.prioridad);
     if (prio !== 0) return prio;
     if (sortMode === "recontactar") {
@@ -135,6 +145,26 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
             <option key={e} value={e}>{ESTADO_CONVERSACION_LABELS[e]}</option>
           ))}
         </select>
+        <select
+          className="list-sort-select"
+          value={sedeFilter}
+          onChange={(e) => setSedeFilter(e.target.value as SedeFilter)}
+          title="Filtrar por sede"
+        >
+          <option value="todas">Todas las sedes</option>
+          {(Object.keys(SEDE_LABELS) as SedeOption[]).map((s) => (
+            <option key={s} value={s}>{SEDE_LABELS[s]}</option>
+          ))}
+          <option value="sin_sede">Sin sede asignada</option>
+        </select>
+        <button
+          type="button"
+          className={`list-sort-btn${soloSinTelefono ? " active" : ""}`}
+          onClick={() => setSoloSinTelefono((v) => !v)}
+          title="Mostrar solo leads sin teléfono cargado"
+        >
+          📵 Sin teléfono
+        </button>
         <button
           type="button"
           className="list-sort-btn"

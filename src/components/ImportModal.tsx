@@ -8,6 +8,7 @@ import { parseInstagramDMs } from "../utils/parseInstagramDMs";
 import { parseWhatsAppExport } from "../utils/parseWhatsAppExport";
 import { parseWhatsAppHistorial } from "../utils/parseWhatsAppHistorial";
 import { phonesMatch } from "../utils/phone";
+import { pareceProveedorOStaff } from "../utils/proveedorDetection";
 
 type Tab = "excel" | "vcf" | "chat" | "instagram" | "whatsapp" | "historial";
 
@@ -112,8 +113,18 @@ export function ImportModal({ leads, onClose, onImport, onImportHistorial }: Pro
   const doImport = () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const items = selected.map(({ _id: _i, _sel: _s, ...rest }) => rest);
-    if (tab === "historial") onImportHistorial(items);
-    else onImport(items);
+    if (tab === "historial") {
+      // Los que parecen proveedor/staff entran directo a esa etapa en vez de "nuevo",
+      // para no mezclarlos con leads reales de venta (ver feedback_leads_data_quality).
+      const marcados = items.map((item) =>
+        pareceProveedorOStaff(item.notas ?? "", item.historial ?? [])
+          ? { ...item, etapa: "proveedor" as const }
+          : item,
+      );
+      onImportHistorial(marcados);
+    } else {
+      onImport(items);
+    }
     onClose();
   };
 
@@ -256,6 +267,7 @@ export function ImportModal({ leads, onClose, onImport, onImportHistorial }: Pro
                       <>
                         <th>Mensajes</th>
                         <th>Estado</th>
+                        <th>Alerta</th>
                       </>
                     ) : tab === "whatsapp" ? <th>Notas</th> : (
                       <>
@@ -289,6 +301,13 @@ export function ImportModal({ leads, onClose, onImport, onImportHistorial }: Pro
                             {row.telefono && leads.some((l) => l.telefono && phonesMatch(l.telefono, row.telefono!))
                               ? "Lead existente"
                               : "Lead nuevo"}
+                          </td>
+                          <td>
+                            {pareceProveedorOStaff(row.notas ?? "", row.historial ?? []) && (
+                              <span className="import-warning" title="Lenguaje típico de proveedor/staff detectado en el historial. Si se crea, entra directo a la etapa 'Proveedor / Staff' en vez de 'Nuevo'.">
+                                ⚠ Posible proveedor/staff
+                              </span>
+                            )}
                           </td>
                         </>
                       ) : tab === "whatsapp" ? (

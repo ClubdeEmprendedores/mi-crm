@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import type { HistorialEntry, Lead, PropuestaOption, SedeOption, Stage } from "../types";
+import type {
+  HistorialEntry, Lead, MotivoBajaTipo, PropuestaOption, RecontactoEnviado, SedeOption, Stage,
+} from "../types";
 import { mergeHistorial } from "../utils/mergeHistorial";
 import { phoneKey } from "../utils/phone";
 
@@ -72,6 +74,26 @@ function findDuplicateGroups(leads: Lead[]): { primaryId: string; duplicateIds: 
   return [...groups.entries()].map(([primaryId, duplicateIds]) => ({ primaryId, duplicateIds }));
 }
 
+/**
+ * Agrupa leads con el mismo nombre completo normalizado, para que el usuario los revise
+ * a mano (NO se fusionan automáticamente). A propósito ignora nombres de una sola palabra
+ * ("Paula", "Maru", "Caro"): son demasiado ambiguos y agruparlos generó falsos positivos
+ * graves en la práctica (ver feedback_leads_data_quality).
+ */
+function findPosiblesDuplicadosPorNombre(leads: Lead[]): { nombre: string; ids: string[] }[] {
+  const groups = new Map<string, string[]>();
+  for (const lead of leads) {
+    const n = normalize(lead.nombre);
+    if (!n || !n.includes(" ")) continue;
+    const arr = groups.get(n) ?? [];
+    arr.push(lead.id);
+    groups.set(n, arr);
+  }
+  return [...groups.entries()]
+    .filter(([, ids]) => ids.length > 1)
+    .map(([nombre, ids]) => ({ nombre, ids }));
+}
+
 /** Calcula los campos a copiar de `dup` hacia `primary` sin perder información. */
 function mergeLeadInto(primary: Lead, dup: Lead): Partial<Lead> {
   const patch: Partial<Lead> = {};
@@ -133,11 +155,15 @@ type DbRow = {
   sede: string | null;
   contact_id: string | null;
   motivo_baja: string | null;
+  motivo_baja_tipo: string | null;
+  fecha_baja: string | null;
   no_recontactar: boolean | null;
   tags: string[] | null;
   ultimo_mensaje_en: string | null;
   historial: HistorialEntry[] | null;
   prioridad: boolean | null;
+  mensaje_recontacto: string | null;
+  recontactos_enviados: RecontactoEnviado[] | null;
 };
 
 function fromDb(row: DbRow): Lead {
@@ -156,11 +182,15 @@ function fromDb(row: DbRow): Lead {
     sede: (row.sede as SedeOption) ?? undefined,
     contactId: row.contact_id ?? undefined,
     motivoBaja: row.motivo_baja ?? "",
+    motivoBajaTipo: (row.motivo_baja_tipo as MotivoBajaTipo) ?? undefined,
+    fechaBaja: row.fecha_baja ?? undefined,
     noRecontactar: row.no_recontactar ?? false,
     tags: row.tags ?? [],
     ultimoMensajeEn: row.ultimo_mensaje_en ?? undefined,
     historial: row.historial ?? [],
     prioridad: row.prioridad ?? false,
+    mensajeRecontacto: row.mensaje_recontacto ?? undefined,
+    recontactosEnviados: row.recontactos_enviados ?? [],
   };
 }
 
@@ -178,11 +208,15 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.sede !== undefined) row.sede = patch.sede || null;
   if (patch.contactId !== undefined) row.contact_id = patch.contactId || null;
   if (patch.motivoBaja !== undefined) row.motivo_baja = patch.motivoBaja;
+  if (patch.motivoBajaTipo !== undefined) row.motivo_baja_tipo = patch.motivoBajaTipo || null;
+  if (patch.fechaBaja !== undefined) row.fecha_baja = patch.fechaBaja || null;
   if (patch.noRecontactar !== undefined) row.no_recontactar = patch.noRecontactar;
   if (patch.tags !== undefined) row.tags = patch.tags;
   if (patch.ultimoMensajeEn !== undefined) row.ultimo_mensaje_en = patch.ultimoMensajeEn || null;
   if (patch.historial !== undefined) row.historial = patch.historial;
   if (patch.prioridad !== undefined) row.prioridad = patch.prioridad;
+  if (patch.mensajeRecontacto !== undefined) row.mensaje_recontacto = patch.mensajeRecontacto || null;
+  if (patch.recontactosEnviados !== undefined) row.recontactos_enviados = patch.recontactosEnviados;
   return row;
 }
 
@@ -283,7 +317,7 @@ export function useLeads() {
       telefono: data.telefono ?? "",
       instagram: data.instagram ?? "",
       notas: data.notas ?? "",
-      etapa: "nuevo",
+      etapa: data.etapa ?? "nuevo",
       tags: data.tags ?? [],
       historial: data.historial ?? [],
     }));
@@ -300,6 +334,19 @@ export function useLeads() {
     () => findDuplicateGroups(leads).reduce((sum, g) => sum + g.duplicateIds.length, 0),
     [leads],
   );
+
+  const posiblesDuplicadosPorNombre = useCallback(
+    () => findPosiblesDuplicadosPorNombre(leads),
+    [leads],
+  );
+
+  /** Guarda un mensaje de recontacto enviado en el log del lead (no pisa el historial general). */
+  const registrarRecontactoEnviado = useCallback(async (id: string, mensaje: string) => {
+    const lead = leads.find((l) => l.id === id);
+    if (!lead) return;
+    const recontactosEnviados = [...lead.recontactosEnviados, { fecha: new Date().toISOString(), mensaje }];
+    await updateLead(id, { recontactosEnviados });
+  }, [leads, updateLead]);
 
   const deduplicateLeads = useCallback(async (): Promise<number> => {
     const groups = findDuplicateGroups(leads);
@@ -379,5 +426,6 @@ export function useLeads() {
   return {
     leads, loading, error, clearError, addLead, addLeads, updateLead, moveLead, deleteLead, deleteLeads,
     countDuplicates, deduplicateLeads, recalcularEtapas,
+    posiblesDuplicadosPorNombre, registrarRecontactoEnviado,
   };
 }

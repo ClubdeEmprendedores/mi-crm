@@ -45,15 +45,25 @@ Las credenciales están en `.env` (no commitear):
 | tags              | tags             | Array de strings (ej. "📣 Recontacto 25-jun: tibio") |
 | ultimo_mensaje_en | ultimoMensajeEn  | Último contacto WhatsApp                         |
 | historial         | historial        | JSONB array de `{fecha, nota}`                   |
+| mensaje_recontacto | mensajeRecontacto | Mensaje puntual de recontacto (no plantilla genérica), editable desde el modal del lead |
+| recontactos_enviados | recontactosEnviados | JSONB array de `{fecha, mensaje}` — log de cada recontacto marcado como enviado (desde el CRM web o desde la extensión) |
+| motivo_baja_tipo  | motivoBajaTipo   | Categoría estructurada de la baja: `deuda` / `mudanza` / `no_funciono` / `decision_personal` / `otro` |
+| fecha_baja        | fechaBaja        | Fecha en que pasó a exmiembro (se autocompleta si se deja vacía) |
 
 ### Etapas
 
 - `nuevo` — Sin contactar todavía
 - `contactado` — Se inició conversación
-- `propuesta` — Se les envió propuesta formal
+- `proveedor` — Proveedor del Club o staff, detectado en el import o marcado a mano; no es un lead de venta y queda fuera de las campañas de recontacto
 - `ganado` — Miembro activo del Club
 - `exmiembro` — Fue miembro, ya no
 - `perdido` — No apto / descartado
+
+Nota: `propuesta` (qué sede se le ofreció: `sanfer`/`santelmo`/`ambas`) es un campo aparte de `etapa`, no una etapa en sí — no confundirlos.
+
+### Sede
+
+`sede` (de un miembro `ganado`) acepta `"sanfer"`, `"santelmo"` o `"ambas"` — esta última para emprendedores con marca activa en las dos sedes (bastante común, ver planillas de balance). Al cargar una propuesta nueva (`propuesta` pasa de vacío a tener valor) se crea automáticamente una `task` de seguimiento a 4 días.
 
 ### Tabla `contacts`
 

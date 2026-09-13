@@ -8,3 +8,8 @@ dist
 .cursor
 .vercel
 .env*
+
+# Perfil de Chrome de reconocimiento (queda con sesion real de WhatsApp logueada)
+# y capturas de pantalla de las pruebas (contienen datos reales de leads).
+extension/_scouting/.chrome-profile
+extension/_scouting/*.png

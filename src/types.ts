@@ -1,6 +1,7 @@
 export const STAGES = [
   "nuevo",
   "contactado",
+  "proveedor",
   "ganado",
   "exmiembro",
   "perdido",
@@ -9,7 +10,29 @@ export const STAGES = [
 export type Stage = (typeof STAGES)[number];
 
 export type PropuestaOption = "sanfer" | "santelmo" | "ambas";
-export type SedeOption = "sanfer" | "santelmo";
+export type SedeOption = "sanfer" | "santelmo" | "ambas";
+
+export const MOTIVO_BAJA_TIPOS = [
+  "deuda",
+  "mudanza",
+  "no_funciono",
+  "decision_personal",
+  "otro",
+] as const;
+export type MotivoBajaTipo = (typeof MOTIVO_BAJA_TIPOS)[number];
+
+export const MOTIVO_BAJA_TIPO_LABELS: Record<MotivoBajaTipo, string> = {
+  deuda: "Deuda / falta de pago",
+  mudanza: "Mudanza / cierre del emprendimiento",
+  no_funciono: "No le funcionó el formato",
+  decision_personal: "Decisión personal",
+  otro: "Otro",
+};
+
+export type RecontactoEnviado = {
+  fecha: string;
+  mensaje: string;
+};
 
 export type HistorialEntry = {
   fecha: string;
@@ -31,11 +54,15 @@ export type Lead = {
   sede?: SedeOption;
   contactId?: string;
   motivoBaja: string;
+  motivoBajaTipo?: MotivoBajaTipo;
+  fechaBaja?: string;
   noRecontactar: boolean;
   tags: string[];
   ultimoMensajeEn?: string;
   historial: HistorialEntry[];
   prioridad: boolean;
+  mensajeRecontacto?: string;
+  recontactosEnviados: RecontactoEnviado[];
 };
 
 export type Contact = {
@@ -55,6 +82,8 @@ export type Task = {
   hecha: boolean;
   creadoEn: string;
   leadId?: string;
+  fechaVencimiento?: string;
+  notificado?: boolean;
 };
 
 export type EstadoFoto = "pendiente" | "recibida" | "aprobada";
@@ -112,6 +141,7 @@ export type WspConversacion = {
 export const STAGE_LABELS: Record<Stage, string> = {
   nuevo: "Nuevo",
   contactado: "Contactado",
+  proveedor: "Proveedor / Staff",
   ganado: "Miembro",
   exmiembro: "Ex-miembro",
   perdido: "No Apto",
@@ -120,6 +150,7 @@ export const STAGE_LABELS: Record<Stage, string> = {
 export const STAGE_COLORS: Record<Stage, string> = {
   nuevo: "#FFB300",
   contactado: "#FFC933",
+  proveedor: "#7c9cbf",
   ganado: "#FFE566",
   exmiembro: "#8b95a5",
   perdido: "#b45309",
@@ -134,6 +165,7 @@ export const PROPUESTA_LABELS: Record<PropuestaOption, string> = {
 export const SEDE_LABELS: Record<SedeOption, string> = {
   sanfer: "San Fernando",
   santelmo: "San Telmo",
+  ambas: "Ambas sedes",
 };
 
 export const CONTENIDO_SEDE_LABELS: Record<ContenidoSede, string> = {

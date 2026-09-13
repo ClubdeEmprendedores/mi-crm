@@ -514,11 +514,22 @@ export default function App() {
               contactadoEn: data.contactadoEn || undefined,
               propuesta: data.propuesta || undefined,
               sede: data.sede || undefined,
+              motivoBajaTipo: data.motivoBajaTipo || undefined,
+              fechaBaja: data.fechaBaja || undefined,
             };
+            const yaTeniaPropuesta = !!editing?.propuesta;
             if (editing) {
               updateLead(editing.id, normalized);
             } else {
               addLead(normalized);
+            }
+            if (normalized.propuesta && !yaTeniaPropuesta && editing) {
+              const vencimiento = new Date();
+              vencimiento.setDate(vencimiento.getDate() + 4);
+              addTask(`Seguimiento de propuesta: ${normalized.nombre || normalized.telefono}`, {
+                leadId: editing.id,
+                fechaVencimiento: vencimiento.toISOString(),
+              });
             }
           }}
           onDelete={editing ? () => deleteLead(editing.id) : undefined}

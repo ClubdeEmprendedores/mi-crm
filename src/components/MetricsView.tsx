@@ -44,14 +44,30 @@ export function MetricsView({ leads }: Props) {
         ? Math.round(tiemposContacto.reduce((a, b) => a + b, 0) / tiemposContacto.length)
         : null;
 
-    const porSede = { sanfer: 0, santelmo: 0, sinSede: 0 };
+    const porSede = { sanfer: 0, santelmo: 0, ambas: 0, sinSede: 0 };
     leads
       .filter((l) => l.etapa === "ganado")
       .forEach((l) => {
         if (l.sede === "sanfer") porSede.sanfer++;
         else if (l.sede === "santelmo") porSede.santelmo++;
+        else if (l.sede === "ambas") porSede.ambas++;
         else porSede.sinSede++;
       });
+
+    // Embudo por mes de creación (últimos 6 meses con datos), para ver si la conversión
+    // varía de un mes a otro en vez de solo mirar el acumulado histórico.
+    const mesKey = (iso: string) => iso.slice(0, 7); // "YYYY-MM"
+    const mesesConLeads = [...new Set(leads.map((l) => mesKey(l.creadoEn)))].sort();
+    const ultimosMeses = mesesConLeads.slice(-6);
+    const porMes = ultimosMeses.map((mes) => {
+      const delMes = leads.filter((l) => mesKey(l.creadoEn) === mes);
+      return {
+        mes,
+        total: delMes.length,
+        contactados: delMes.filter((l) => l.etapa !== "nuevo").length,
+        ganados: delMes.filter((l) => l.etapa === "ganado").length,
+      };
+    });
 
     const tagCounts = new Map<string, number>();
     leads.forEach((l) => l.tags.forEach((t) => tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1)));
@@ -70,6 +86,7 @@ export function MetricsView({ leads }: Props) {
       churn,
       promedioDiasAContacto,
       porSede,
+      porMes,
       topTags,
       destacados,
     };
@@ -131,12 +148,47 @@ export function MetricsView({ leads }: Props) {
         </div>
       </section>
 
+      <section className="metrics-section">
+        <h3 className="metrics-section-title">Embudo por mes de creación (últimos {stats.porMes.length} meses)</h3>
+        {stats.porMes.length === 0 ? (
+          <p className="metrics-hint">Todavía no hay suficientes datos.</p>
+        ) : (
+          <div className="metrics-mes-table-wrap">
+            <table className="list-table">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th>Nuevos</th>
+                  <th>Contactados</th>
+                  <th>Miembros</th>
+                  <th>Conversión</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.porMes.map(({ mes, total, contactados, ganados }) => (
+                  <tr key={mes}>
+                    <td>{mes}</td>
+                    <td>{total}</td>
+                    <td>{contactados}</td>
+                    <td>{ganados}</td>
+                    <td>{total > 0 ? `${((ganados / total) * 100).toFixed(1)}%` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       <div className="metrics-two-col">
         <section className="metrics-section">
           <h3 className="metrics-section-title">Miembros por sede</h3>
           <ul className="metrics-simple-list">
             <li><span>San Fernando</span><span>{stats.porSede.sanfer}</span></li>
             <li><span>San Telmo</span><span>{stats.porSede.santelmo}</span></li>
+            {stats.porSede.ambas > 0 && (
+              <li><span>Ambas sedes</span><span>{stats.porSede.ambas}</span></li>
+            )}
             {stats.porSede.sinSede > 0 && (
               <li><span>Sin sede asignada</span><span>{stats.porSede.sinSede}</span></li>
             )}

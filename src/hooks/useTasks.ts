@@ -8,6 +8,8 @@ type DbRow = {
   hecha: boolean;
   creado_en: string;
   lead_id?: string | null;
+  fecha_vencimiento?: string | null;
+  notificado?: boolean;
 };
 
 function fromDb(row: DbRow): Task {
@@ -17,6 +19,8 @@ function fromDb(row: DbRow): Task {
     hecha: row.hecha,
     creadoEn: row.creado_en,
     leadId: row.lead_id ?? undefined,
+    fechaVencimiento: row.fecha_vencimiento ?? undefined,
+    notificado: row.notificado ?? false,
   };
 }
 
@@ -39,10 +43,18 @@ export function useTasks() {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const addTask = useCallback(async (texto: string) => {
+  const addTask = useCallback(async (
+    texto: string,
+    opts?: { leadId?: string; fechaVencimiento?: string },
+  ) => {
     const { data, error: err } = await supabase
       .from("tasks")
-      .insert({ texto, hecha: false })
+      .insert({
+        texto,
+        hecha: false,
+        lead_id: opts?.leadId ?? null,
+        fecha_vencimiento: opts?.fechaVencimiento ?? null,
+      })
       .select()
       .single();
     if (err) { setError(err.message); return; }

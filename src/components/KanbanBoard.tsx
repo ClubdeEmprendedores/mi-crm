@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import type { Lead, Stage, Task } from "../types";
-import { STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
+import type { Lead, SedeOption, Stage, Task } from "../types";
+import { SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
 import { normalizeSearch } from "../utils/text";
 import { LeadCard } from "./LeadCard";
+
+type SedeFilter = SedeOption | "todas" | "sin_sede";
 
 type Props = {
   leads: Lead[];
@@ -34,6 +36,7 @@ export function KanbanBoard({ leads, onMove, onEdit, onSendWhatsapp, onTogglePri
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<Stage | null>(null);
   const [search, setSearch] = useState("");
+  const [sedeFilter, setSedeFilter] = useState<SedeFilter>("todas");
   const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export function KanbanBoard({ leads, onMove, onEdit, onSendWhatsapp, onTogglePri
   };
 
   const q = normalizeSearch(search.trim());
-  const filtered = q
+  const bySearch = q
     ? leads.filter(
         (l) =>
           normalizeSearch(l.nombre).includes(q) ||
@@ -61,6 +64,12 @@ export function KanbanBoard({ leads, onMove, onEdit, onSendWhatsapp, onTogglePri
           l.tags.some((t) => normalizeSearch(t).includes(q)),
       )
     : leads;
+  const filtered =
+    sedeFilter === "todas"
+      ? bySearch
+      : sedeFilter === "sin_sede"
+      ? bySearch.filter((l) => !l.sede)
+      : bySearch.filter((l) => l.sede === sedeFilter);
 
   const byStage = (stage: Stage) =>
     filtered
@@ -115,7 +124,19 @@ export function KanbanBoard({ leads, onMove, onEdit, onSendWhatsapp, onTogglePri
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {q && (
+        <select
+          className="list-sort-select"
+          value={sedeFilter}
+          onChange={(e) => setSedeFilter(e.target.value as SedeFilter)}
+          title="Filtrar por sede"
+        >
+          <option value="todas">Todas las sedes</option>
+          {(Object.keys(SEDE_LABELS) as SedeOption[]).map((s) => (
+            <option key={s} value={s}>{SEDE_LABELS[s]}</option>
+          ))}
+          <option value="sin_sede">Sin sede asignada</option>
+        </select>
+        {(q || sedeFilter !== "todas") && (
           <span className="contacts-count">
             {filtered.length} de {leads.length}
           </span>

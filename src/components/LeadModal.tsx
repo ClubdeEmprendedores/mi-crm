@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import type { Contact, HistorialEntry, Lead, PropuestaOption, SedeOption, Stage } from "../types";
-import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
-import { parseSpeaker } from "../utils/conversacion";
+import type {
+  Contact, HistorialEntry, Lead, MotivoBajaTipo, PropuestaOption, RecontactoEnviado, SedeOption, Stage,
+} from "../types";
+import { MOTIVO_BAJA_TIPO_LABELS, MOTIVO_BAJA_TIPOS, PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
+import { diasDesde, parseSpeaker } from "../utils/conversacion";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 import { formatDate, formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
@@ -26,10 +28,14 @@ type Props = {
     sede: SedeOption | "";
     contactId?: string;
     motivoBaja: string;
+    motivoBajaTipo: MotivoBajaTipo | "";
+    fechaBaja: string;
     noRecontactar: boolean;
     tags: string[];
     historial: HistorialEntry[];
     prioridad: boolean;
+    mensajeRecontacto: string;
+    recontactosEnviados: RecontactoEnviado[];
   }) => void;
   onDelete?: () => void;
 };
@@ -57,10 +63,14 @@ const empty = {
   sede: "" as SedeOption | "",
   contactId: "",
   motivoBaja: "",
+  motivoBajaTipo: "" as MotivoBajaTipo | "",
+  fechaBaja: "",
   noRecontactar: false,
   tags: [] as string[],
   historial: [] as HistorialEntry[],
   prioridad: false,
+  mensajeRecontacto: "",
+  recontactosEnviados: [] as RecontactoEnviado[],
 };
 
 const FORM_ID = "lead-form";
@@ -97,10 +107,14 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
         sede: lead.sede ?? "",
         contactId: lead.contactId ?? "",
         motivoBaja: lead.motivoBaja,
+        motivoBajaTipo: lead.motivoBajaTipo ?? "",
+        fechaBaja: isoToDateInput(lead.fechaBaja),
         noRecontactar: lead.noRecontactar,
         tags: lead.tags ?? [],
         historial: lead.historial ?? [],
         prioridad: lead.prioridad,
+        mensajeRecontacto: lead.mensajeRecontacto ?? "",
+        recontactosEnviados: lead.recontactosEnviados ?? [],
       });
       setWaMessage(mensajeReconexion(lead));
       setLastSent(lead.ultimoMensajeEn);
@@ -158,6 +172,10 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
       form.etapa === "contactado" && !form.contactadoEn
         ? new Date().toISOString()
         : dateInputToIso(form.contactadoEn);
+    const autoFechaBaja =
+      form.etapa === "exmiembro" && !form.fechaBaja
+        ? new Date().toISOString()
+        : dateInputToIso(form.fechaBaja);
     onSave({
       nombre: form.nombre,
       empresa: form.empresa,
@@ -171,13 +189,39 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
       sede: form.sede,
       contactId: form.contactId || undefined,
       motivoBaja: form.motivoBaja,
+      motivoBajaTipo: form.motivoBajaTipo,
+      fechaBaja: autoFechaBaja,
       noRecontactar: form.noRecontactar,
       tags: form.tags,
       historial: form.historial,
       prioridad: form.prioridad,
+      mensajeRecontacto: form.mensajeRecontacto,
+      recontactosEnviados: form.recontactosEnviados,
     });
     onClose();
   };
+
+  const convertirEnMiembro = () => {
+    setForm((f) => ({
+      ...f,
+      etapa: "ganado",
+      contactadoEn: f.contactadoEn || isoToDateInput(new Date().toISOString()),
+    }));
+  };
+
+  const registrarRecontactoEnviado = () => {
+    if (!form.mensajeRecontacto.trim()) return;
+    setForm((f) => ({
+      ...f,
+      recontactosEnviados: [
+        { fecha: new Date().toISOString(), mensaje: f.mensajeRecontacto },
+        ...f.recontactosEnviados,
+      ],
+    }));
+  };
+
+  const ultimoRecontacto = form.recontactosEnviados[0];
+  const diasSinRespuestaRecontacto = ultimoRecontacto ? diasDesde(ultimoRecontacto.fecha) : null;
 
   const linkedContact = form.contactId
     ? contacts.find((c) => c.id === form.contactId)
@@ -387,6 +431,42 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                 )}
               </div>
             )}
+            {(form.etapa === "nuevo" || form.etapa === "contactado") && (
+              <div className="recontacto-box">
+                <span className="field-label">Mensaje de recontacto (puntual, no plantilla genérica)</span>
+                {diasSinRespuestaRecontacto !== null && diasSinRespuestaRecontacto >= 7 && (
+                  <p className="recontacto-alert">
+                    ⏰ Ya se le mandó un recontacto hace {diasSinRespuestaRecontacto} días sin respuesta.
+                    Pensalo dos veces antes de mandarle otro genérico — releé el historial.
+                  </p>
+                )}
+                <textarea
+                  rows={3}
+                  placeholder="Leé el historial completo abajo y escribí algo puntual sobre dónde quedó esta conversación…"
+                  value={form.mensajeRecontacto}
+                  onChange={(e) => setForm({ ...form, mensajeRecontacto: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ alignSelf: "flex-start" }}
+                  disabled={!form.mensajeRecontacto.trim()}
+                  onClick={registrarRecontactoEnviado}
+                  title="Guarda este texto en el log de recontactos enviados (no lo manda solo)"
+                >
+                  ✓ Marcar como enviado
+                </button>
+                {form.recontactosEnviados.length > 0 && (
+                  <ul className="recontacto-log">
+                    {form.recontactosEnviados.map((r, i) => (
+                      <li key={i} className="recontacto-log-item">
+                        <span className="recontacto-log-date">{formatShortDate(r.fecha)}</span>: {r.mensaje}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
             <label>
               Etiquetas
               <div className="tag-input-row">
@@ -431,21 +511,34 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                 />
               </div>
             </label>
-            <label>
-              Etapa
-              <select
-                value={form.etapa}
-                onChange={(e) =>
-                  setForm({ ...form, etapa: e.target.value as Stage })
-                }
-              >
-                {STAGES.map((s) => (
-                  <option key={s} value={s}>
-                    {STAGE_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="form-row">
+              <label>
+                Etapa
+                <select
+                  value={form.etapa}
+                  onChange={(e) =>
+                    setForm({ ...form, etapa: e.target.value as Stage })
+                  }
+                >
+                  {STAGES.map((s) => (
+                    <option key={s} value={s}>
+                      {STAGE_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {lead && form.etapa !== "ganado" && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ alignSelf: "flex-end" }}
+                  onClick={convertirEnMiembro}
+                  title="Pasa la etapa a Miembro y baja directo a elegir la sede"
+                >
+                  ✅ Convertir en miembro
+                </button>
+              )}
+            </div>
             {form.etapa === "ganado" && (
               <label>
                 Sede
@@ -454,6 +547,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                   onChange={(e) =>
                     setForm({ ...form, sede: e.target.value as SedeOption | "" })
                   }
+                  style={!form.sede ? { borderColor: "#f87171" } : undefined}
                 >
                   <option value="">— Sin especificar —</option>
                   {(Object.keys(SEDE_LABELS) as SedeOption[]).map((s) => (
@@ -462,12 +556,39 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                     </option>
                   ))}
                 </select>
+                {!form.sede && (
+                  <span className="field-hint field-hint--warning">
+                    Elegí una sede — con "Sin especificar" no aparece en métricas ni en campañas por sede.
+                  </span>
+                )}
               </label>
             )}
             {form.etapa === "exmiembro" && (
               <>
+                <div className="form-row">
+                  <label>
+                    Motivo de baja (tipo)
+                    <select
+                      value={form.motivoBajaTipo}
+                      onChange={(e) => setForm({ ...form, motivoBajaTipo: e.target.value as MotivoBajaTipo | "" })}
+                    >
+                      <option value="">— Sin especificar —</option>
+                      {MOTIVO_BAJA_TIPOS.map((t) => (
+                        <option key={t} value={t}>{MOTIVO_BAJA_TIPO_LABELS[t]}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Fecha de baja
+                    <input
+                      type="date"
+                      value={form.fechaBaja}
+                      onChange={(e) => setForm({ ...form, fechaBaja: e.target.value })}
+                    />
+                  </label>
+                </div>
                 <label>
-                  Motivo de baja
+                  Motivo de baja (detalle)
                   <textarea
                     rows={3}
                     placeholder="¿Por qué dejó de ser miembro?"

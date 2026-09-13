@@ -1,0 +1,33 @@
+name: Reconciliar leads vs planillas de balance
+
+on:
+  schedule:
+    # Domingos 9am Argentina (UTC-3) -> 12:00 UTC. El cron nativo de GitHub
+    # es "best effort" (puede atrasarse en el plan gratuito) — si eso importa,
+    # replicar acá el mismo truco de portal-club: un endpoint que un cron
+    # externo (cron-job.org) dispara vía workflow_dispatch con precisión real.
+    - cron: "0 12 * * 0"
+  workflow_dispatch: {}
+
+jobs:
+  reconciliar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts/reconciliar
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Correr reconciliación
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: python reconciliar_leads.py
