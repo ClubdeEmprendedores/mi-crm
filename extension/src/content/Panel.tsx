@@ -72,8 +72,37 @@ export function Panel({ headerText }: { headerText: string | null }) {
   const [nuevoTag, setNuevoTag] = useState("");
   const [copiado, setCopiado] = useState(false);
   const [recordatorioOk, setRecordatorioOk] = useState<string | null>(null);
+  const [colapsado, setColapsado] = useState(false);
   const { offset, onMouseDown } = useDraggable("mcw-panel-pos");
   const panelStyle = { transform: `translate(${offset.x}px, ${offset.y}px)` };
+
+  useEffect(() => {
+    chrome.storage.local.get("mcw-panel-colapsado").then((stored) => {
+      if (typeof stored["mcw-panel-colapsado"] === "boolean") {
+        setColapsado(stored["mcw-panel-colapsado"]);
+      }
+    });
+  }, []);
+
+  const toggleColapsado = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setColapsado((prev) => {
+      const next = !prev;
+      chrome.storage.local.set({ "mcw-panel-colapsado": next });
+      return next;
+    });
+  }, []);
+
+  const toggleBtn = (
+    <button
+      className="mcw-toggle-btn"
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={toggleColapsado}
+      title={colapsado ? "Expandir panel" : "Colapsar panel"}
+    >
+      {colapsado ? "▸" : "▾"}
+    </button>
+  );
 
   const phoneMatch = headerText?.match(/\+\d[\d\s-]{8,}\d/) ?? null;
   const telefonoRaw = phoneMatch ? phoneMatch[0] : null;
@@ -195,14 +224,17 @@ export function Panel({ headerText }: { headerText: string | null }) {
   if (!telefonoRaw) {
     return (
       <div className="mcw-panel" style={panelStyle}>
-        <div className="mcw-drag-handle" onMouseDown={onMouseDown}>
-          ⠿ CRM
+        <div className="mcw-header mcw-drag-handle" onMouseDown={onMouseDown}>
+          <strong>⠿ CRM</strong>
+          {toggleBtn}
         </div>
-        <div className="mcw-empty">
-          Este contacto está guardado con nombre — todavía no puedo detectar
-          el número automáticamente acá. Abrí un chat con un número sin
-          guardar para ver el panel.
-        </div>
+        {!colapsado && (
+          <div className="mcw-empty">
+            Este contacto está guardado con nombre — todavía no puedo detectar
+            el número automáticamente acá. Abrí un chat con un número sin
+            guardar para ver el panel.
+          </div>
+        )}
       </div>
     );
   }
@@ -210,10 +242,11 @@ export function Panel({ headerText }: { headerText: string | null }) {
   if (loading) {
     return (
       <div className="mcw-panel" style={panelStyle}>
-        <div className="mcw-drag-handle" onMouseDown={onMouseDown}>
-          ⠿ CRM
+        <div className="mcw-header mcw-drag-handle" onMouseDown={onMouseDown}>
+          <strong>⠿ CRM</strong>
+          {toggleBtn}
         </div>
-        <div className="mcw-empty">Buscando en el CRM…</div>
+        {!colapsado && <div className="mcw-empty">Buscando en el CRM…</div>}
       </div>
     );
   }
@@ -221,12 +254,15 @@ export function Panel({ headerText }: { headerText: string | null }) {
   if (notFound || !lead) {
     return (
       <div className="mcw-panel" style={panelStyle}>
-        <div className="mcw-drag-handle" onMouseDown={onMouseDown}>
-          ⠿ CRM
+        <div className="mcw-header mcw-drag-handle" onMouseDown={onMouseDown}>
+          <strong>⠿ CRM</strong>
+          {toggleBtn}
         </div>
-        <div className="mcw-empty">
-          {telefonoRaw} no está en el CRM todavía.
-        </div>
+        {!colapsado && (
+          <div className="mcw-empty">
+            {telefonoRaw} no está en el CRM todavía.
+          </div>
+        )}
       </div>
     );
   }
@@ -238,101 +274,108 @@ export function Panel({ headerText }: { headerText: string | null }) {
     <div className="mcw-panel" style={panelStyle}>
       <div className="mcw-header mcw-drag-handle" onMouseDown={onMouseDown}>
         <strong>⠿ {lead.nombre || lead.telefono}</strong>
-        <span className="mcw-etapa">{lead.etapa}</span>
+        <span className="mcw-row" style={{ gap: 6 }}>
+          <span className="mcw-etapa">{lead.etapa}</span>
+          {toggleBtn}
+        </span>
       </div>
 
-      <div
-        className="mcw-estado"
-        style={{ background: ESTADO_CONVERSACION_COLORS[estado] }}
-      >
-        {ESTADO_CONVERSACION_LABELS[estado]}
-      </div>
+      {!colapsado && (
+        <>
+          <div
+            className="mcw-estado"
+            style={{ background: ESTADO_CONVERSACION_COLORS[estado] }}
+          >
+            {ESTADO_CONVERSACION_LABELS[estado]}
+          </div>
 
-      {ultimo && (
-        <div className="mcw-ultimo">
-          Último contacto: {new Date(ultimo.fecha).toLocaleString("es-AR")}
-        </div>
-      )}
+          {ultimo && (
+            <div className="mcw-ultimo">
+              Último contacto: {new Date(ultimo.fecha).toLocaleString("es-AR")}
+            </div>
+          )}
 
-      <div className="mcw-section">
-        <div className="mcw-section-title">Etiquetas</div>
-        <div className="mcw-tags">
-          {lead.tags.map((t) => (
-            <span key={t} className="mcw-tag">
-              {t}
-            </span>
-          ))}
-        </div>
-        <div className="mcw-row">
-          <input
-            className="mcw-input"
-            placeholder="Nueva etiqueta"
-            value={nuevoTag}
-            onChange={(e) => setNuevoTag(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && agregarTag()}
-          />
-          <button className="mcw-btn" onClick={agregarTag}>
-            + Tag
-          </button>
-        </div>
-      </div>
-
-      <div className="mcw-section">
-        <div className="mcw-section-title">Notas</div>
-        <textarea
-          className="mcw-textarea"
-          value={notas}
-          onChange={(e) => setNotas(e.target.value)}
-          onBlur={guardarNotas}
-          rows={3}
-        />
-      </div>
-
-      <div className="mcw-section">
-        <div className="mcw-section-title">Recordarme</div>
-        <div className="mcw-row mcw-wrap">
-          {REMINDER_CHIPS.map((c) => (
-            <button
-              key={c.label}
-              className="mcw-chip"
-              onClick={() => crearRecordatorio(c.ms, c.label)}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        {recordatorioOk && (
-          <div className="mcw-ok">Recordatorio creado ({recordatorioOk})</div>
-        )}
-      </div>
-
-      <div className="mcw-section">
-        <button className="mcw-btn mcw-btn-primary" onClick={copiarPlantilla}>
-          {copiado ? "¡Copiado!" : "📋 Copiar plantilla sugerida"}
-        </button>
-        {lead.etapa !== "perdido" && lead.etapa !== "ganado" && (
-          <button className="mcw-btn mcw-btn-danger" onClick={marcarNoInteresado}>
-            🚫 No interesado
-          </button>
-        )}
-      </div>
-
-      <div className="mcw-section">
-        <div className="mcw-section-title">Historial ({lead.historial.length})</div>
-        <div className="mcw-historial">
-          {[...lead.historial]
-            .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-            .slice(0, 20)
-            .map((h, i) => (
-              <div key={i} className="mcw-historial-item">
-                <span className="mcw-historial-fecha">
-                  {new Date(h.fecha).toLocaleDateString("es-AR")}
+          <div className="mcw-section">
+            <div className="mcw-section-title">Etiquetas</div>
+            <div className="mcw-tags">
+              {lead.tags.map((t) => (
+                <span key={t} className="mcw-tag">
+                  {t}
                 </span>
-                <span>{h.nota}</span>
-              </div>
-            ))}
-        </div>
-      </div>
+              ))}
+            </div>
+            <div className="mcw-row">
+              <input
+                className="mcw-input"
+                placeholder="Nueva etiqueta"
+                value={nuevoTag}
+                onChange={(e) => setNuevoTag(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && agregarTag()}
+              />
+              <button className="mcw-btn" onClick={agregarTag}>
+                + Tag
+              </button>
+            </div>
+          </div>
+
+          <div className="mcw-section">
+            <div className="mcw-section-title">Notas</div>
+            <textarea
+              className="mcw-textarea"
+              value={notas}
+              onChange={(e) => setNotas(e.target.value)}
+              onBlur={guardarNotas}
+              rows={3}
+            />
+          </div>
+
+          <div className="mcw-section">
+            <div className="mcw-section-title">Recordarme</div>
+            <div className="mcw-row mcw-wrap">
+              {REMINDER_CHIPS.map((c) => (
+                <button
+                  key={c.label}
+                  className="mcw-chip"
+                  onClick={() => crearRecordatorio(c.ms, c.label)}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            {recordatorioOk && (
+              <div className="mcw-ok">Recordatorio creado ({recordatorioOk})</div>
+            )}
+          </div>
+
+          <div className="mcw-section">
+            <button className="mcw-btn mcw-btn-primary" onClick={copiarPlantilla}>
+              {copiado ? "¡Copiado!" : "📋 Copiar plantilla sugerida"}
+            </button>
+            {lead.etapa !== "perdido" && lead.etapa !== "ganado" && (
+              <button className="mcw-btn mcw-btn-danger" onClick={marcarNoInteresado}>
+                🚫 No interesado
+              </button>
+            )}
+          </div>
+
+          <div className="mcw-section">
+            <div className="mcw-section-title">Historial ({lead.historial.length})</div>
+            <div className="mcw-historial">
+              {[...lead.historial]
+                .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                .slice(0, 20)
+                .map((h, i) => (
+                  <div key={i} className="mcw-historial-item">
+                    <span className="mcw-historial-fecha">
+                      {new Date(h.fecha).toLocaleDateString("es-AR")}
+                    </span>
+                    <span>{h.nota}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

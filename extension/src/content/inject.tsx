@@ -48,6 +48,12 @@ const PANEL_CSS = `
   }
   .mcw-empty { color: #8696a0; padding: 8px 0; }
   .mcw-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .mcw-toggle-btn {
+    background: #2a3942; color: #e9edef; border: none; border-radius: 4px;
+    width: 20px; height: 20px; line-height: 1; font-size: 11px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .mcw-toggle-btn:hover { background: #384852; }
   .mcw-etapa { font-size: 11px; background: #2a3942; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
   .mcw-estado { padding: 4px 8px; border-radius: 4px; color: #111b21; font-weight: 600; margin-bottom: 6px; }
   .mcw-ultimo { color: #8696a0; font-size: 11px; margin-bottom: 10px; }
