@@ -52,6 +52,8 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 
 BAJA_KEYWORDS = ("baja", "ultimo mes", "último mes", "se va")
 
+ISSUE_TITULO = "Reconciliación de leads — revisión pendiente"
+
 
 def normalize(s: str | None) -> str:
     if not s:
@@ -164,6 +166,44 @@ def patch_lead(url: str, headers: dict, lead_id: str, body: dict, dry_run: bool)
     resp.raise_for_status()
 
 
+def publicar_issue_github(cuerpo: str, hay_pendientes: bool, dry_run: bool) -> None:
+    """Crea/actualiza un Issue con los casos que necesitan revisión humana, o lo
+    cierra solo si ya no queda nada pendiente. Sin esto el reporte solo vivía en
+    el log de la Action y nadie lo veía entre corrida y corrida."""
+    token = os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not token or not repo:
+        print("(GITHUB_TOKEN/GITHUB_REPOSITORY no disponibles — no publico Issue, corrida local)")
+        return
+
+    api = f"https://api.github.com/repos/{repo}/issues"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
+
+    resp = requests.get(api, headers=headers, params={"state": "open", "per_page": 100}, timeout=30)
+    resp.raise_for_status()
+    existente = next((i for i in resp.json() if i["title"] == ISSUE_TITULO), None)
+
+    if dry_run:
+        print(f"(dry-run) {'actualizaría' if existente else 'crearía'} Issue de reconciliación" if hay_pendientes else "(dry-run) no habría nada pendiente para publicar")
+        return
+
+    if not hay_pendientes:
+        if existente:
+            requests.post(f"{api}/{existente['number']}/comments", headers=headers,
+                           json={"body": "Sin casos pendientes en la corrida más reciente — cierro automáticamente."},
+                           timeout=30).raise_for_status()
+            requests.patch(f"{api}/{existente['number']}", headers=headers,
+                            json={"state": "closed"}, timeout=30).raise_for_status()
+        return
+
+    if existente:
+        requests.patch(f"{api}/{existente['number']}", headers=headers,
+                        json={"body": cuerpo}, timeout=30).raise_for_status()
+    else:
+        requests.post(api, headers=headers,
+                       json={"title": ISSUE_TITULO, "body": cuerpo}, timeout=30).raise_for_status()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="No escribe nada, solo imprime qué haría")
@@ -258,6 +298,9 @@ def main() -> int:
     if step_summary:
         with open(step_summary, "a", encoding="utf-8") as f:
             f.write(texto + "\n")
+
+    hay_pendientes = bool(sin_match or posibles_bajas)
+    publicar_issue_github(texto, hay_pendientes, args.dry_run)
 
     return 0
 
