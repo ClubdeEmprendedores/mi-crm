@@ -258,18 +258,24 @@ def main() -> int:
             sin_match.append(f"[{entry['sede']}] {entry['empresa']} ({entry.get('email') or entry.get('instagram') or 'sin contacto'})")
             continue
 
-        sedes_por_lead.setdefault(lead["id"], set()).add(entry["sede"])
+        es_baja = parece_baja(entry["estado_texto"])
 
-        patch: dict = {}
-        if lead.get("etapa") != "ganado":
-            patch["etapa"] = "ganado"
-        if not lead.get("sede"):
-            patch["sede"] = entry["sede"]
-        if patch:
-            patch_lead(supabase_url, headers, lead["id"], patch, args.dry_run)
-            fixes.append(f"{lead.get('nombre') or entry['empresa']}: {patch}")
+        # Una fila marcada BAJA/ÚLTIMO MES en la planilla no cuenta como sede
+        # activa: no debe reactivar un exmiembro/perdido ya decidido a mano,
+        # ni sumar esa sede al cálculo de "ambas" (dual-sede).
+        if not es_baja:
+            sedes_por_lead.setdefault(lead["id"], set()).add(entry["sede"])
 
-        if parece_baja(entry["estado_texto"]) and lead.get("etapa") == "ganado":
+            patch: dict = {}
+            if lead.get("etapa") not in ("ganado", "exmiembro", "perdido"):
+                patch["etapa"] = "ganado"
+            if not lead.get("sede"):
+                patch["sede"] = entry["sede"]
+            if patch:
+                patch_lead(supabase_url, headers, lead["id"], patch, args.dry_run)
+                fixes.append(f"{lead.get('nombre') or entry['empresa']}: {patch}")
+
+        if es_baja and lead.get("etapa") == "ganado":
             posibles_bajas.append(f"[{entry['sede']}] {lead.get('nombre') or entry['empresa']} — planilla dice: \"{entry['estado_texto']}\"")
 
     for lead_id, sedes in sedes_por_lead.items():
