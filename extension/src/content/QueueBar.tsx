@@ -7,6 +7,8 @@ import { useDraggable } from "./useDraggable";
 
 export const RECONTACTO_QUEUE_TAG = "🎯 Recontacto sept-2026";
 
+const SIGUIENTE_STORAGE_KEY = "mcw-queuebar-siguiente";
+
 type QueueLead = {
   id: string;
   nombre: string;
@@ -36,6 +38,17 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
 
   const [siguienteInfo, setSiguienteInfo] = useState<{ id: string; nombre: string; telefono: string; mensaje: string } | null>(null);
   const [copiado, setCopiado] = useState<"numero" | "mensaje" | null>(null);
+
+  // "Siguiente" navega la pestaña entera a web.whatsapp.com/send?phone=... para
+  // abrir el chat directo (mismo mecanismo que las notificaciones), lo que
+  // resetea el estado de React al recargar — persistimos acá lo necesario
+  // para que el mensaje y el nombre sigan visibles después del reload.
+  useEffect(() => {
+    chrome.storage.local.get(SIGUIENTE_STORAGE_KEY).then((stored) => {
+      const saved = stored[SIGUIENTE_STORAGE_KEY] as typeof siguienteInfo | undefined;
+      if (saved) setSiguienteInfo(saved);
+    });
+  }, []);
 
   const copiar = useCallback((texto: string, cual: "numero" | "mensaje") => {
     navigator.clipboard.writeText(texto).then(() => {
@@ -78,13 +91,25 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
 
     await navigator.clipboard.writeText(texto);
     setCopiado("mensaje");
-    setSiguienteInfo({
+    const info = {
       id: siguiente.id,
       nombre: siguiente.nombre || siguiente.telefono,
       telefono: siguiente.telefono,
       mensaje: texto,
-    });
-    setStatus("Mensaje copiado — buscalo en la lista de WhatsApp y pegalo");
+    };
+    setSiguienteInfo(info);
+    await chrome.storage.local.set({ [SIGUIENTE_STORAGE_KEY]: info });
+    setStatus("Mensaje copiado — abriendo el chat...");
+
+    // Mismo mecanismo que ya usan las notificaciones (service-worker.ts) para
+    // saltar directo al chat sin buscar a mano. Provoca una navegacion
+    // completa de la pestaña (WhatsApp Web la maneja bien), asi que el panel
+    // se remonta solo — el mensaje ya quedó copiado antes de navegar, y
+    // "info" queda guardado en storage para sobrevivir el reload.
+    const digits = siguiente.telefono.replace(/\D/g, "");
+    if (digits) {
+      window.location.href = `https://web.whatsapp.com/send?phone=${digits}`;
+    }
   }, []);
 
   // Usa el id del lead que ya tenemos guardado de cuando lo buscamos (no
@@ -106,6 +131,7 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
     await supabase.from("leads").update({ tags, recontactos_enviados: recontactosEnviados }).eq("id", siguienteInfo.id);
     setStatus(`✓ ${siguienteInfo.nombre} sacado de la cola`);
     setSiguienteInfo(null);
+    await chrome.storage.local.remove(SIGUIENTE_STORAGE_KEY);
     refreshCount();
   }, [siguienteInfo, refreshCount]);
 
@@ -122,7 +148,7 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
       {siguienteInfo && (
         <div className="mcw-queuebar-target">
           <div>
-            1) Buscá: <strong>{siguienteInfo.nombre}</strong> — Tel:{" "}
+            Se abrió el chat de <strong>{siguienteInfo.nombre}</strong> — Tel:{" "}
             <strong>{siguienteInfo.telefono}</strong>{" "}
             <button
               className="mcw-copy-btn"
@@ -131,7 +157,11 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
               {copiado === "numero" ? "¡Copiado!" : "📋 Copiar número"}
             </button>
           </div>
-          <div style={{ marginTop: 8 }}>2) Este es el mensaje (ya está copiado):</div>
+          <div style={{ marginTop: 4, fontSize: 11, color: "#8696a0" }}>
+            Si WhatsApp te muestra un botón "Continuar al chat" o dice que el número no es
+            válido, usá el número de arriba para buscarlo a mano.
+          </div>
+          <div style={{ marginTop: 8 }}>Pegá este mensaje (ya está copiado) y enviá:</div>
           <textarea
             className="mcw-textarea"
             style={{ marginTop: 4 }}
