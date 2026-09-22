@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type {
-  HistorialEntry, Lead, MotivoBajaTipo, PropuestaOption, RecontactoEnviado, SedeOption, Stage,
+  HistorialEntry, Lead, MotivoBajaTipo, PropuestaOption, RecontactoEnviado, Rubro, SedeOption, Stage,
 } from "../types";
 import { mergeHistorial } from "../utils/mergeHistorial";
 import { phoneKey } from "../utils/phone";
@@ -153,6 +153,7 @@ type DbRow = {
   contactado_en: string | null;
   propuesta: string | null;
   sede: string | null;
+  rubro: string | null;
   contact_id: string | null;
   motivo_baja: string | null;
   motivo_baja_tipo: string | null;
@@ -180,6 +181,7 @@ function fromDb(row: DbRow): Lead {
     contactadoEn: row.contactado_en ?? undefined,
     propuesta: (row.propuesta as PropuestaOption) ?? undefined,
     sede: (row.sede as SedeOption) ?? undefined,
+    rubro: (row.rubro as Rubro) ?? undefined,
     contactId: row.contact_id ?? undefined,
     motivoBaja: row.motivo_baja ?? "",
     motivoBajaTipo: (row.motivo_baja_tipo as MotivoBajaTipo) ?? undefined,
@@ -206,6 +208,7 @@ function toDbPatch(patch: Partial<Lead>): Record<string, unknown> {
   if (patch.contactadoEn !== undefined) row.contactado_en = patch.contactadoEn || null;
   if (patch.propuesta !== undefined) row.propuesta = patch.propuesta || null;
   if (patch.sede !== undefined) row.sede = patch.sede || null;
+  if (patch.rubro !== undefined) row.rubro = patch.rubro || null;
   if (patch.contactId !== undefined) row.contact_id = patch.contactId || null;
   if (patch.motivoBaja !== undefined) row.motivo_baja = patch.motivoBaja;
   if (patch.motivoBajaTipo !== undefined) row.motivo_baja_tipo = patch.motivoBajaTipo || null;
@@ -260,6 +263,7 @@ export function useLeads() {
           contactado_en: data.contactadoEn || null,
           propuesta: data.propuesta || null,
           sede: data.sede || null,
+          rubro: data.rubro || null,
           contact_id: data.contactId || null,
           motivo_baja: data.motivoBaja,
           no_recontactar: data.noRecontactar,

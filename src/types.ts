@@ -29,6 +29,35 @@ export const MOTIVO_BAJA_TIPO_LABELS: Record<MotivoBajaTipo, string> = {
   otro: "Otro",
 };
 
+export const RUBROS = [
+  "indumentaria_femenina",
+  "indumentaria_masculina",
+  "indumentaria_infantil",
+  "calzado",
+  "accesorios",
+  "deco_hogar",
+  "bazar_regalos",
+  "arte_manualidades",
+  "belleza_cosmetica",
+  "alimentos",
+  "otro",
+] as const;
+export type Rubro = (typeof RUBROS)[number];
+
+export const RUBRO_LABELS: Record<Rubro, string> = {
+  indumentaria_femenina: "Indumentaria femenina",
+  indumentaria_masculina: "Indumentaria masculina",
+  indumentaria_infantil: "Indumentaria infantil",
+  calzado: "Calzado",
+  accesorios: "Accesorios (carteras, bijou, joyería)",
+  deco_hogar: "Deco / hogar",
+  bazar_regalos: "Bazar / regalos",
+  arte_manualidades: "Arte / manualidades",
+  belleza_cosmetica: "Belleza / cosmética",
+  alimentos: "Alimentos",
+  otro: "Otro",
+};
+
 export type RecontactoEnviado = {
   fecha: string;
   mensaje: string;
@@ -52,6 +81,7 @@ export type Lead = {
   contactadoEn?: string;
   propuesta?: PropuestaOption;
   sede?: SedeOption;
+  rubro?: Rubro;
   contactId?: string;
   motivoBaja: string;
   motivoBajaTipo?: MotivoBajaTipo;

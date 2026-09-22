@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import type { Lead, SedeOption, Stage } from "../types";
-import { PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
+import type { Lead, Rubro, SedeOption, Stage } from "../types";
+import { PROPUESTA_LABELS, RUBRO_LABELS, RUBROS, SEDE_LABELS, STAGES, STAGE_COLORS, STAGE_LABELS } from "../types";
 import {
   diasDesde,
   ESTADO_CONVERSACION_COLORS,
@@ -34,6 +34,7 @@ type SortMode = "recientes" | "antiguos" | "recontactar";
 type StageFilter = Stage | "todas";
 type ConversacionFilter = EstadoConversacion | "todas";
 type SedeFilter = SedeOption | "todas" | "sin_sede";
+type RubroFilter = Rubro | "todos" | "sin_rubro";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-AR", {
@@ -49,6 +50,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
   const [stageFilter, setStageFilter] = useState<StageFilter>("todas");
   const [conversacionFilter, setConversacionFilter] = useState<ConversacionFilter>("todas");
   const [sedeFilter, setSedeFilter] = useState<SedeFilter>("todas");
+  const [rubroFilter, setRubroFilter] = useState<RubroFilter>("todos");
   const [soloSinTelefono, setSoloSinTelefono] = useState(false);
 
   const byStage = stageFilter === "todas" ? leads : leads.filter((l) => l.etapa === stageFilter);
@@ -62,7 +64,13 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
       : sedeFilter === "sin_sede"
       ? byConversacion.filter((l) => !l.sede)
       : byConversacion.filter((l) => l.sede === sedeFilter);
-  const byTelefono = soloSinTelefono ? bySede.filter((l) => !l.telefono.trim()) : bySede;
+  const byRubro =
+    rubroFilter === "todos"
+      ? bySede
+      : rubroFilter === "sin_rubro"
+      ? bySede.filter((l) => !l.rubro)
+      : bySede.filter((l) => l.rubro === rubroFilter);
+  const byTelefono = soloSinTelefono ? byRubro.filter((l) => !l.telefono.trim()) : byRubro;
 
   const sorted = [...byTelefono].sort((a, b) => {
     const prio = Number(b.prioridad) - Number(a.prioridad);
@@ -157,6 +165,18 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
           ))}
           <option value="sin_sede">Sin sede asignada</option>
         </select>
+        <select
+          className="list-sort-select"
+          value={rubroFilter}
+          onChange={(e) => setRubroFilter(e.target.value as RubroFilter)}
+          title="Filtrar por rubro"
+        >
+          <option value="todos">Todos los rubros</option>
+          {RUBROS.map((r) => (
+            <option key={r} value={r}>{RUBRO_LABELS[r]}</option>
+          ))}
+          <option value="sin_rubro">Sin rubro asignado</option>
+        </select>
         <button
           type="button"
           className={`list-sort-btn${soloSinTelefono ? " active" : ""}`}
@@ -207,6 +227,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
             <th className="list-star-col"></th>
             <th>Nombre</th>
             <th>Empresa</th>
+            <th>Rubro</th>
             <th>Contacto</th>
             <th>Propuesta</th>
             <th>Etapa</th>
@@ -262,6 +283,7 @@ export function ListView({ leads, onEdit, onMove, selectedIds, onToggleSelect, o
                 )}
               </td>
               <td>{lead.empresa || "—"}</td>
+              <td>{lead.rubro ? RUBRO_LABELS[lead.rubro] : "—"}</td>
               <td className="list-contact">
                 {lead.instagram && <InstagramLink username={lead.instagram} />}
                 {lead.email && <span>{lead.email}</span>}

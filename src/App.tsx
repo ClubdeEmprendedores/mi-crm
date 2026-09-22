@@ -514,6 +514,7 @@ export default function App() {
               contactadoEn: data.contactadoEn || undefined,
               propuesta: data.propuesta || undefined,
               sede: data.sede || undefined,
+              rubro: data.rubro || undefined,
               motivoBajaTipo: data.motivoBajaTipo || undefined,
               fechaBaja: data.fechaBaja || undefined,
             };

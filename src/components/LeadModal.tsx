@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type {
-  Contact, HistorialEntry, Lead, MotivoBajaTipo, PropuestaOption, RecontactoEnviado, SedeOption, Stage,
+  Contact, HistorialEntry, Lead, MotivoBajaTipo, PropuestaOption, RecontactoEnviado, Rubro, SedeOption, Stage,
 } from "../types";
-import { MOTIVO_BAJA_TIPO_LABELS, MOTIVO_BAJA_TIPOS, PROPUESTA_LABELS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
+import { MOTIVO_BAJA_TIPO_LABELS, MOTIVO_BAJA_TIPOS, PROPUESTA_LABELS, RUBRO_LABELS, RUBROS, SEDE_LABELS, STAGES, STAGE_LABELS } from "../types";
 import { diasDesde, parseSpeaker } from "../utils/conversacion";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 import { formatDate, formatShortDate } from "../utils/format";
@@ -26,6 +26,7 @@ type Props = {
     contactadoEn: string;
     propuesta: PropuestaOption | "";
     sede: SedeOption | "";
+    rubro: Rubro | "";
     contactId?: string;
     motivoBaja: string;
     motivoBajaTipo: MotivoBajaTipo | "";
@@ -61,6 +62,7 @@ const empty = {
   contactadoEn: "",
   propuesta: "" as PropuestaOption | "",
   sede: "" as SedeOption | "",
+  rubro: "" as Rubro | "",
   contactId: "",
   motivoBaja: "",
   motivoBajaTipo: "" as MotivoBajaTipo | "",
@@ -105,6 +107,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
         contactadoEn: isoToDateInput(lead.contactadoEn),
         propuesta: lead.propuesta ?? "",
         sede: lead.sede ?? "",
+        rubro: lead.rubro ?? "",
         contactId: lead.contactId ?? "",
         motivoBaja: lead.motivoBaja,
         motivoBajaTipo: lead.motivoBajaTipo ?? "",
@@ -187,6 +190,7 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
       contactadoEn: autoContactadoEn,
       propuesta: form.propuesta,
       sede: form.sede,
+      rubro: form.rubro,
       contactId: form.contactId || undefined,
       motivoBaja: form.motivoBaja,
       motivoBajaTipo: form.motivoBajaTipo,
@@ -623,6 +627,22 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                   ))}
                 </select>
               </label>
+              <label>
+                Rubro
+                <select
+                  value={form.rubro}
+                  onChange={(e) => setForm({ ...form, rubro: e.target.value as Rubro | "" })}
+                >
+                  <option value="">— Sin definir —</option>
+                  {RUBROS.map((r) => (
+                    <option key={r} value={r}>
+                      {RUBRO_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="form-row">
               <label>
                 Fecha de contacto
                 <input
