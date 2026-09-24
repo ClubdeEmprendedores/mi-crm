@@ -188,3 +188,18 @@ for m in sorted(miembros, key=lambda x: x.get("nombre") or ""):
 - No hay ORM: queries directas con `supabase.from(...).select/insert/update/delete`
 - Paginación de leads: de a 1000 registros en `useLeads.ts`
 - Deduplicación automática por instagram/email/teléfono — lógica en `findDuplicateGroups()` y `mergeLeadInto()`
+
+## Supabase: permisos en tablas nuevas (desde el 30/10/2026)
+
+Desde el 30 de octubre de 2026, Supabase ya no le da acceso automático a la Data API (supabase-js, PostgREST, GraphQL) a las tablas **nuevas** del schema `public`. Las tablas existentes conservan sus permisos y no hay que hacer nada con ellas.
+
+Toda tabla nueva tiene que llevar sus `GRANT` **en el mismo SQL / migración que la crea**; si no, la API devuelve "permission denied":
+
+```sql
+grant select on public.nombre_tabla to anon;                                    -- solo si se lee sin sesión
+grant select, insert, update, delete on public.nombre_tabla to authenticated;
+grant select, insert, update, delete on public.nombre_tabla to service_role;
+```
+
+- Ajustar a lo mínimo necesario (p. ej. no dar `anon` si la tabla es privada). Los `GRANT` no reemplazan a RLS: seguir activando RLS y sus policies.
+- Aplica también a vistas nuevas, preview branches y `supabase db reset` en local.
