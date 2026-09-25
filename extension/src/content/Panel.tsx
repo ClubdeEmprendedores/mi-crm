@@ -7,7 +7,7 @@ import {
   ESTADO_CONVERSACION_LABELS,
   ESTADO_CONVERSACION_COLORS,
 } from "../../../src/utils/conversacion";
-import { mensajePorEstadoConversacion } from "../../../src/utils/whatsapp";
+import { mensajePlanesSanFernando, mensajePorEstadoConversacion } from "../../../src/utils/whatsapp";
 import type { HistorialEntry } from "../../../src/types";
 import { useDraggable } from "./useDraggable";
 
@@ -71,6 +71,7 @@ export function Panel({ headerText }: { headerText: string | null }) {
   const [notas, setNotas] = useState("");
   const [nuevoTag, setNuevoTag] = useState("");
   const [copiado, setCopiado] = useState(false);
+  const [planesCopiado, setPlanesCopiado] = useState(false);
   const [recordatorioOk, setRecordatorioOk] = useState<string | null>(null);
   const [colapsado, setColapsado] = useState(false);
   const { offset, onMouseDown } = useDraggable("mcw-panel-pos");
@@ -182,6 +183,14 @@ export function Panel({ headerText }: { headerText: string | null }) {
     navigator.clipboard.writeText(texto).then(() => {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
+    });
+  }, [lead]);
+
+  const copiarPlanes = useCallback(() => {
+    if (!lead) return;
+    navigator.clipboard.writeText(mensajePlanesSanFernando(lead.nombre || "")).then(() => {
+      setPlanesCopiado(true);
+      setTimeout(() => setPlanesCopiado(false), 2000);
     });
   }, [lead]);
 
@@ -351,6 +360,11 @@ export function Panel({ headerText }: { headerText: string | null }) {
             <button className="mcw-btn mcw-btn-primary" onClick={copiarPlantilla}>
               {copiado ? "¡Copiado!" : "📋 Copiar plantilla sugerida"}
             </button>
+            {lead.etapa !== "ganado" && lead.etapa !== "proveedor" && (
+              <button className="mcw-btn" style={{ width: "100%", marginTop: 6 }} onClick={copiarPlanes}>
+                {planesCopiado ? "¡Copiado!" : "🐝 Copiar planes San Fernando"}
+              </button>
+            )}
             {lead.etapa !== "perdido" && lead.etapa !== "ganado" && (
               <button className="mcw-btn mcw-btn-danger" onClick={marcarNoInteresado}>
                 🚫 No interesado

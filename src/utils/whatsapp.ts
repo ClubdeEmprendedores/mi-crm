@@ -21,13 +21,13 @@ export const RECONTACTO_FRIO_TAG = "📣 Recontacto 25-jun: frio";
 export function recontactoTibioMensaje(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} Soy Mati, de Club de Emprendedores. Hace un tiempo hablamos y no llegamos a cerrarlo. ¿Seguís con tu emprendimiento? Tenemos lugar en San Fernando y en San Telmo, contame y vemos qué te conviene.`;
+  return `${saludo} Soy Mati, de Club de Emprendedores. Hace un tiempo hablamos y no llegamos a cerrarlo. ¿Seguís con tu emprendimiento? En San Fernando estrenamos planes nuevos, con opciones desde 1 mes para aprovechar las fiestas, y también tenemos lugar en San Telmo. Contame y vemos qué te conviene.`;
 }
 
 export function recontactoFrioMensaje(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} Soy Mati, de Club de Emprendedores. Vi que en algún momento te interesaste por tener tu espacio con nosotros. Somos un showroom compartido en San Fernando y San Telmo: vos creás, nosotros vendemos, cobramos y reponemos. ¿Seguís emprendiendo? Te cuento más si querés.`;
+  return `${saludo} Soy Mati, de Club de Emprendedores. Vi que en algún momento te interesaste por tener tu espacio con nosotros. Somos un showroom compartido en San Fernando y San Telmo: vos creás, nosotros vendemos, cobramos y reponemos. En San Fernando estrenamos planes nuevos, hay opciones desde 1 mes para las fiestas. ¿Seguís emprendiendo? Te cuento más si querés.`;
 }
 
 /** Presentación estándar del Club, usada como apertura en los mensajes de primer contacto. */
@@ -36,7 +36,7 @@ const INTRO_CLUB = "Soy Mati, del Club de Emprendedores. Tenemos sede en San Fer
 export function defaultReconexionMensaje(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} ${INTRO_CLUB} ¿Cómo va tu emprendimiento? Te cuento cómo podés tener tu espacio en nuestro showroom.`;
+  return `${saludo} ${INTRO_CLUB} ¿Cómo va tu emprendimiento? En San Fernando estrenamos planes nuevos, con opciones desde 1 mes para las fiestas. Te cuento cómo podés tener tu espacio en nuestro showroom.`;
 }
 
 /** Nunca se lo contactó: primer mensaje de apertura. */
@@ -50,14 +50,14 @@ export function mensajePrimerContacto(nombre: string): string {
 export function mensajeSinRespuestaDeEllos(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} ${INTRO_CLUB} Te escribí hace un tiempo y no sé si llegaste a ver el mensaje. ¿Seguís con tu emprendimiento? Contame y te cuento cómo tener tu espacio con nosotros.`;
+  return `${saludo} ${INTRO_CLUB} Te escribí hace un tiempo y no sé si llegaste a ver el mensaje. ¿Seguís con tu emprendimiento? En San Fernando estrenamos planes nuevos, con opciones desde 1 mes para las fiestas. Contame y te cuento cómo tener tu espacio con nosotros.`;
 }
 
 /** Ellos escribieron primero pidiendo info, les respondiste (saludo) y no volvieron a escribir. */
 export function mensajeNuncaRespondioSaludo(nombre: string): string {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
   const saludo = primerNombre ? `¡Hola ${primerNombre}!` : "¡Hola!";
-  return `${saludo} Soy Mati, de Club de Emprendedores. Hace un tiempo nos escribiste preguntando por el Club y te pasamos la info, pero no supimos más de vos 😊 ¿Seguís con tu emprendimiento? Contame y vemos si te sirve un espacio en San Fernando o San Telmo.`;
+  return `${saludo} Soy Mati, de Club de Emprendedores. Hace un tiempo nos escribiste preguntando por el Club y te pasamos la info, pero no supimos más de vos 😊 ¿Seguís con tu emprendimiento? En San Fernando estrenamos planes nuevos, con opciones desde 1 mes para las fiestas. Contame y vemos si te sirve un espacio en San Fernando o San Telmo.`;
 }
 
 /** Último mensaje fue de ellos: retomar la conversación que quedó pendiente. */
@@ -79,6 +79,25 @@ export function mensajePorEstadoConversacion(nombre: string, estado: EstadoConve
     default:
       return defaultReconexionMensaje(nombre);
   }
+}
+
+/**
+ * Resumen de los planes de San Fernando (flyer "Planes San Fernando v2", sep-2026),
+ * para mandar cuando alguien pide precios. San Telmo sigue con sus condiciones anteriores.
+ */
+export function mensajePlanesSanFernando(nombre: string): string {
+  const saludo = primerNombre(nombre) ? `¡Hola ${primerNombre(nombre)}!` : "¡Hola!";
+  return [
+    `${saludo} Te paso los planes de San Fernando (Sarmiento 1271) 🐝`,
+    "Vos creás, nosotros vendemos: atendemos y vendemos por vos, cobramos con tarjeta, QR, efectivo y transferencia, reponemos tu stock en el local y reposteamos tus historias. Además, en tu portal ves desde el celu qué vendiste y cuánto stock te queda.",
+    "*Plan Colmena* (el más conveniente) · 6 meses de permanencia\nPerchero o estante $70.000/mes · Módulo $120.000/mes\nFee de ingreso $35.000 / $60.000 · Comisión 15%",
+    "*Plan Panal* · 3 meses, renovación automática\nPerchero o estante $85.000/mes · Módulo $150.000/mes\nFee $42.500 / $75.000 · Comisión 15%",
+    "*Plan Polen* · 3 meses, comisión solo si vendés\nPerchero o estante $100.000/mes · Módulo $175.000/mes\nFee $50.000 / $87.500 · 10% solo si vendés el doble del alquiler",
+    "*Plan Vuelo* · 1 mes, ideal para las fiestas\nPerchero o estante $100.000 · Módulo $175.000\nFee $50.000 (te lo descontamos si seguís en Panal o Colmena) · Comisión 15%",
+    "*Plan Néctar* · punto de retiro para tus ventas online\n$50.000/mes · 10% si vendés online y retiran acá, 15% si la venta se hace en el local · 3 meses, renovación automática",
+    "Y si recomendás a otro emprendedor y se suma, tenés 50% off en un mes de alquiler.",
+    "Contame qué vendés y elegimos juntos el plan que más te conviene. Si te queda más cerca, también tenemos sede en San Telmo.",
+  ].join("\n\n");
 }
 
 type ReconexionLead = {

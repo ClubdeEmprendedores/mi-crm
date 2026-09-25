@@ -8,7 +8,7 @@ import { useEscapeKey } from "../hooks/useEscapeKey";
 import { formatDate, formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 import { normalizeSearch } from "../utils/text";
-import { mensajeReconexion, reporteEnviadoMensaje, whatsappUrl } from "../utils/whatsapp";
+import { mensajePlanesSanFernando, mensajeReconexion, reporteEnviadoMensaje, whatsappUrl } from "../utils/whatsapp";
 
 type Props = {
   lead: Lead | null;
@@ -407,6 +407,15 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                     onClick={() => setWaMessage(reporteEnviadoMensaje(form.nombre))}
                   >
                     Usar mensaje: reporte enviado por mail
+                  </button>
+                )}
+                {form.etapa !== "ganado" && form.etapa !== "proveedor" && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm whatsapp-template-btn"
+                    onClick={() => setWaMessage(mensajePlanesSanFernando(form.nombre))}
+                  >
+                    Usar mensaje: planes San Fernando
                   </button>
                 )}
                 <textarea
