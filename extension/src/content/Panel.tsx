@@ -7,7 +7,7 @@ import {
   ESTADO_CONVERSACION_LABELS,
   ESTADO_CONVERSACION_COLORS,
 } from "../../../src/utils/conversacion";
-import { mensajePlanesSanFernando, mensajePorEstadoConversacion } from "../../../src/utils/whatsapp";
+import { mensajePlanesClub, mensajePorEstadoConversacion } from "../../../src/utils/whatsapp";
 import type { HistorialEntry } from "../../../src/types";
 import { useDraggable } from "./useDraggable";
 
@@ -188,7 +188,7 @@ export function Panel({ headerText }: { headerText: string | null }) {
 
   const copiarPlanes = useCallback(() => {
     if (!lead) return;
-    navigator.clipboard.writeText(mensajePlanesSanFernando(lead.nombre || "")).then(() => {
+    navigator.clipboard.writeText(mensajePlanesClub(lead.nombre || "")).then(() => {
       setPlanesCopiado(true);
       setTimeout(() => setPlanesCopiado(false), 2000);
     });
@@ -362,7 +362,7 @@ export function Panel({ headerText }: { headerText: string | null }) {
             </button>
             {lead.etapa !== "ganado" && lead.etapa !== "proveedor" && (
               <button className="mcw-btn" style={{ width: "100%", marginTop: 6 }} onClick={copiarPlanes}>
-                {planesCopiado ? "¡Copiado!" : "🐝 Copiar planes San Fernando"}
+                {planesCopiado ? "¡Copiado!" : "🐝 Copiar planes del Club"}
               </button>
             )}
             {lead.etapa !== "perdido" && lead.etapa !== "ganado" && (
