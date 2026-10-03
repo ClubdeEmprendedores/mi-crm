@@ -6,6 +6,8 @@ import type { HistorialEntry } from "../../../src/types";
 import { useDraggable } from "./useDraggable";
 
 export const RECONTACTO_QUEUE_TAG = "🎯 Recontacto sept-2026";
+/** Marca de leads que no se encontraron en WhatsApp al recorrer la cola; se excluyen de tandas futuras. */
+export const NO_ENCONTRADO_WSP_TAG = "🔍 No encontrado en WhatsApp";
 
 type QueueLead = {
   id: string;
@@ -109,6 +111,36 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
     refreshCount();
   }, [siguienteInfo, refreshCount]);
 
+  // El numero no aparece en WhatsApp (no tiene cuenta, chat borrado o guardado
+  // con otro nombre): sale de la cola SIN registrar un envio, y queda marcado
+  // para no volver a entrar en una tanda.
+  const marcarNoEncontrado = useCallback(async () => {
+    if (!siguienteInfo) return;
+    setStatus("Marcando...");
+    const { data } = await supabase
+      .from("leads")
+      .select("tags,historial")
+      .eq("id", siguienteInfo.id)
+      .single();
+    const tags = [
+      ...((data?.tags as string[] | undefined) ?? []).filter(
+        (t) => t !== RECONTACTO_QUEUE_TAG && t !== NO_ENCONTRADO_WSP_TAG,
+      ),
+      NO_ENCONTRADO_WSP_TAG,
+    ];
+    const historial = [
+      ...((data?.historial as HistorialEntry[] | undefined) ?? []),
+      { fecha: new Date().toISOString(), nota: "🔍 No se encontró el número en WhatsApp al recorrer la cola de recontacto. Probar por Instagram." },
+    ];
+    await supabase
+      .from("leads")
+      .update({ tags, historial, mensaje_recontacto: null })
+      .eq("id", siguienteInfo.id);
+    setStatus(`🔍 ${siguienteInfo.nombre} sacado de la cola (no está en WhatsApp)`);
+    setSiguienteInfo(null);
+    refreshCount();
+  }, [siguienteInfo, refreshCount]);
+
   if (total === null) return null;
 
   return (
@@ -158,6 +190,13 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
           ✓ Enviado, sacar de la cola
         </button>
       </div>
+      {siguienteInfo && (
+        <div className="mcw-row">
+          <button className="mcw-btn" onClick={marcarNoEncontrado}>
+            🔍 No lo encuentro en WhatsApp
+          </button>
+        </div>
+      )}
       {status && <div className="mcw-ok">{status}</div>}
     </div>
   );
