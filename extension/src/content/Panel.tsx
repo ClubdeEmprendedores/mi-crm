@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { borrarLeadCompleto } from "../lib/borrarLead";
 import { last10 } from "./phone";
 import {
   getEstadoConversacion,
@@ -211,6 +212,14 @@ export function Panel({ headerText }: { headerText: string | null }) {
     }
   }, [lead]);
 
+  const borrarContacto = useCallback(async () => {
+    if (!lead) return;
+    const borrado = await borrarLeadCompleto(lead);
+    if (!borrado) return;
+    setLead(null);
+    setNotFound(true);
+  }, [lead]);
+
   const crearRecordatorio = useCallback(
     async (ms: number, label: string) => {
       if (!lead) return;
@@ -370,6 +379,9 @@ export function Panel({ headerText }: { headerText: string | null }) {
                 🚫 No interesado
               </button>
             )}
+            <button className="mcw-btn mcw-btn-danger" onClick={borrarContacto}>
+              🗑 Borrar contacto del CRM
+            </button>
           </div>
 
           <div className="mcw-section">
