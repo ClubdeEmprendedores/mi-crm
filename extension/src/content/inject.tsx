@@ -83,6 +83,18 @@ const PANEL_CSS = `
   }
   .mcw-chip:hover { background: #2a3942; }
   .mcw-ok { color: #00a884; font-size: 11px; margin-top: 4px; }
+  .mcw-resultado {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;
+    background: #202c33; color: #e9edef; border: 1px solid #2a3942; border-radius: 4px;
+    padding: 6px 8px; margin-top: 6px; font-size: 12px; cursor: pointer; text-align: left;
+  }
+  .mcw-resultado:hover { background: #2a3942; }
+  .mcw-resultado span { color: #8696a0; font-size: 11px; }
+  .mcw-alta-campo { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; font-size: 11px; color: #8696a0; }
+  .mcw-alta-campo .mcw-input { width: 100%; box-sizing: border-box; }
+  .mcw-input-vacio { border-color: #f59e0b !important; background: rgba(245, 158, 11, 0.1) !important; }
+  .mcw-alerta { color: #fbbf24; font-size: 11px; margin-top: 6px; }
+  .mcw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .mcw-historial { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
   .mcw-historial-item { font-size: 11px; color: #d1d7db; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid #202c33; padding-bottom: 4px; }
   .mcw-historial-fecha { color: #8696a0; }
