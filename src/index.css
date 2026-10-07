@@ -2761,3 +2761,30 @@ body {
   background: var(--surface-2);
   color: var(--text);
 }
+
+.alta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem;
+}
+
+.alta-grid label {
+  font-size: 0.8rem;
+}
+
+.alta-campo--vacio input,
+.alta-campo--vacio select {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.alta-preview {
+  margin: 0;
+  padding: 0.6rem;
+  border-radius: 6px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.08));
+  font-family: inherit;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -9,6 +9,8 @@ import { formatDate, formatShortDate } from "../utils/format";
 import { sanitizeInstagramUsername } from "../utils/instagram";
 import { normalizeSearch } from "../utils/text";
 import { mensajePlanesClub, mensajeReconexion, reporteEnviadoMensaje, whatsappUrl } from "../utils/whatsapp";
+import { GRUPO_SEDE_LABELS, type DatosAlta } from "../utils/altaEmprendedor";
+import { AltaGrupoBox } from "./AltaGrupoBox";
 
 type Props = {
   lead: Lead | null;
@@ -210,6 +212,29 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
       ...f,
       etapa: "ganado",
       contactadoEn: f.contactadoEn || isoToDateInput(new Date().toISOString()),
+    }));
+  };
+
+  // Al copiar el alta: pasa a miembro activo en esa sede, completa en la
+  // ficha lo que faltaba (mail, IG, emprendimiento) y deja constancia en el
+  // historial de qué se mandó al grupo.
+  const registrarAltaCopiada = (datos: DatosAlta, sede: SedeOption) => {
+    const resumen = [datos.plan, datos.montoMensual && `${datos.montoMensual}/mes`, datos.mesInicio && `desde ${datos.mesInicio}`]
+      .filter(Boolean)
+      .join(", ");
+    setForm((f) => ({
+      ...f,
+      etapa: "ganado",
+      sede,
+      contactadoEn: f.contactadoEn || isoToDateInput(new Date().toISOString()),
+      nombre: f.nombre || datos.nombre,
+      empresa: f.empresa || datos.emprendimiento,
+      email: f.email || datos.email,
+      instagram: f.instagram || sanitizeInstagramUsername(datos.instagram),
+      historial: [
+        { fecha: new Date().toISOString(), nota: `🐝 Alta enviada al grupo de ${GRUPO_SEDE_LABELS[sede]}${resumen ? `: ${resumen}` : ""}` },
+        ...f.historial,
+      ],
     }));
   };
 
@@ -479,6 +504,20 @@ export function LeadModal({ lead, contacts, onClose, onSave, onDelete, onSendWha
                   </ul>
                 )}
               </div>
+            )}
+            {lead && (form.etapa === "nuevo" || form.etapa === "contactado" || form.etapa === "ganado") && (
+              <AltaGrupoBox
+                nombre={form.nombre}
+                empresa={form.empresa}
+                telefono={form.telefono}
+                email={form.email}
+                instagram={form.instagram}
+                rubro={form.rubro}
+                sede={form.sede}
+                historial={form.historial}
+                onSedeChange={(sede) => setForm((f) => ({ ...f, sede }))}
+                onAltaCopiada={registrarAltaCopiada}
+              />
             )}
             <label>
               Etiquetas
