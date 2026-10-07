@@ -42,6 +42,7 @@ const CAMPOS: Array<{ key: keyof DatosAlta; label: string }> = [
 ];
 
 const SEDES: SedeOption[] = ["sanfer", "santelmo", "ambas"];
+const SEDE_CORTA: Record<SedeOption, string> = { sanfer: "San Fernando", santelmo: "San Telmo", ambas: "Las dos" };
 
 // El historial del CRM puede estar atrasado (depende de la sincronización
 // con WhatsApp), así que se suman los mensajes que se ven en el chat abierto.
@@ -130,21 +131,25 @@ export function AltaGrupo({ lead, onActualizado }: { lead: AltaLead; onActualiza
           />
         </label>
       ))}
-      <label className="mcw-alta-campo">
+      {/* Botones en vez de <select>: el desplegable nativo de Chrome no toma
+          el tema oscuro y las opciones quedaban ilegibles. */}
+      <div className="mcw-alta-campo">
         <span>Grupo</span>
-        <select
-          className={`mcw-input ${sede ? "" : "mcw-input-vacio"}`}
-          value={sede}
-          onChange={(e) => setSede(e.target.value as SedeOption | "")}
-        >
-          <option value="">Elegí la sede…</option>
+        <div className="mcw-row">
           {SEDES.map((s) => (
-            <option key={s} value={s}>
-              {GRUPO_SEDE_LABELS[s]}
-            </option>
+            <button
+              key={s}
+              className={`mcw-sede ${sede === s ? "mcw-sede-activa" : ""} ${sede ? "" : "mcw-input-vacio"}`}
+              onClick={() => {
+                setSede(s);
+                setEstado(null);
+              }}
+            >
+              {SEDE_CORTA[s]}
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
       <div className="mcw-empty" style={{ fontSize: 11 }}>
         {leidosDelChat > 0
           ? `Busqué en el historial del CRM y en los ${leidosDelChat} mensajes que se ven en este chat. Si algo está más arriba, subí en el chat y tocá "Volver a buscar".`
