@@ -70,7 +70,9 @@ export function extraerInstagram(historial: HistorialEntry[]): string {
 export function extraerCondiciones(historial: HistorialEntry[]): { mesInicio: string; montoMensual: string } {
   for (const h of mensajesNuevosPrimero(historial)) {
     if (parseSpeaker(h.nota) !== "yo") continue;
-    const m = h.nota.match(/abono de ([A-Za-zÁÉÍÓÚáéíóúñÑ ]+?)\s*\*\s*\$\s*([\d.,]+)\s*\*/);
+    // Los asteriscos son opcionales: leído desde WhatsApp Web el *negrita*
+    // llega sin ellos.
+    const m = h.nota.match(/abono de ([A-Za-zÁÉÍÓÚáéíóúñÑ ]+?)\s*\*?\s*\$\s*([\d.,]*\d)/);
     if (m) {
       const mes = m[1].replace(/^medio\s+/i, "").trim().toUpperCase();
       return { mesInicio: mes, montoMensual: `$${m[2]}` };
@@ -79,20 +81,31 @@ export function extraerCondiciones(historial: HistorialEntry[]): { mesInicio: st
   return { mesInicio: "", montoMensual: "" };
 }
 
-const PLANES_CLUB = /\b(colmena|panal|polen|vuelo|n[ée]ctar)\b/i;
+const PLANES_CLUB = /\b(colmena|panal|polen|vuelo|n[ée]ctar)\b/gi;
 const MOBILIARIO = /\b(un|una|dos|tres|cuatro|\d+)?\s*(percheros?|estantes?|m[oó]dulos?|paneles?|panel)\b/gi;
 
-/** Lo último que se habló de mobiliario (perchero, estante, módulo) y plan. */
-export function extraerPlan(historial: HistorialEntry[]): string {
+/** Mensajes de la charla del cierre, sin las presentaciones largas del Club. */
+function charlaDelCierre(historial: HistorialEntry[]): string[] {
   const ordenados = mensajesNuevosPrimero(historial);
-  if (ordenados.length === 0) return "";
+  if (ordenados.length === 0) return [];
   const desde = new Date(ordenados[0].fecha).getTime() - VENTANA_PLAN_DIAS * 24 * 60 * 60 * 1000;
-  for (const h of ordenados) {
-    if (new Date(h.fecha).getTime() < desde) break;
-    const texto = stripSpeakerPrefix(h.nota);
-    // Los mensajes largos son las presentaciones genéricas del Club,
-    // que nombran todos los formatos y no dicen qué se contrató.
-    if (texto.length > 400) continue;
+  return ordenados
+    .filter((h) => new Date(h.fecha).getTime() >= desde)
+    .map((h) => stripSpeakerPrefix(h.nota))
+    // Los mensajes largos (presentación, flyer de planes) nombran todos los
+    // planes y formatos, y no dicen cuál se contrató.
+    .filter((t) => t.length <= 400);
+}
+
+/**
+ * Plan y mueble acordados. Se buscan por separado porque muchas veces se
+ * aclaran en mensajes distintos ("el plan Panal" … "con un estante").
+ */
+export function extraerPlan(historial: HistorialEntry[]): string {
+  const mensajes = charlaDelCierre(historial);
+
+  let mueble = "";
+  for (const texto of mensajes) {
     const matches = [...texto.matchAll(MOBILIARIO)];
     if (matches.length === 0) continue;
     // Un ítem por tipo de mueble ("estante" y "4 estantes" cuentan una vez).
@@ -102,12 +115,22 @@ export function extraerPlan(historial: HistorialEntry[]): string {
       const tipo = palabra.startsWith("perch") ? "perchero" : palabra.startsWith("estant") ? "estante" : palabra.startsWith("pan") ? "panel" : "modulo";
       if (!porTipo.has(tipo)) porTipo.set(tipo, m[0].trim().toLowerCase());
     }
-    const unicos = [...porTipo.values()];
-    const plan = texto.match(PLANES_CLUB);
-    const base = unicos.join(" y ");
-    return plan ? `Plan ${plan[1][0].toUpperCase()}${plan[1].slice(1).toLowerCase()} (${base})` : base;
+    mueble = [...porTipo.values()].join(" y ");
+    break;
   }
-  return "";
+
+  let plan = "";
+  for (const texto of mensajes) {
+    const nombres = [...new Set([...texto.matchAll(PLANES_CLUB)].map((m) => m[1].toLowerCase()))];
+    // Si un mensaje nombra varios planes es una comparación, no el elegido.
+    if (nombres.length === 1) {
+      plan = `Plan ${nombres[0][0].toUpperCase()}${nombres[0].slice(1)}`;
+      break;
+    }
+  }
+
+  if (plan && mueble) return `${plan} (${mueble})`;
+  return plan || mueble;
 }
 
 /** "5491141907630" → "1141907630" (como se carga en la planilla). */

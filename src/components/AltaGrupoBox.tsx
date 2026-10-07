@@ -27,16 +27,17 @@ type Props = {
   onAltaCopiada: (datos: DatosAlta, sede: SedeOption) => void;
 };
 
-const CAMPOS: Array<{ key: keyof DatosAlta; label: string; placeholder?: string }> = [
+// Sin textos de ejemplo en los campos: en gris parecían datos leídos.
+const CAMPOS: Array<{ key: keyof DatosAlta; label: string }> = [
   { key: "nombre", label: "Nombre completo" },
   { key: "emprendimiento", label: "Emprendimiento" },
   { key: "whatsapp", label: "WhatsApp" },
   { key: "email", label: "Mail" },
-  { key: "instagram", label: "Instagram", placeholder: "sin @" },
-  { key: "rubro", label: "Rubro", placeholder: "ej. indumentaria y accesorios" },
-  { key: "plan", label: "Plan contratado", placeholder: "ej. perchero y estante" },
-  { key: "montoMensual", label: "Monto por mes", placeholder: "$140.000" },
-  { key: "mesInicio", label: "Comienza en", placeholder: "OCTUBRE" },
+  { key: "instagram", label: "Instagram (sin @)" },
+  { key: "rubro", label: "Rubro" },
+  { key: "plan", label: "Plan contratado" },
+  { key: "montoMensual", label: "Monto por mes" },
+  { key: "mesInicio", label: "Comienza en (mes)" },
 ];
 
 export function AltaGrupoBox(props: Props) {
@@ -90,7 +91,6 @@ export function AltaGrupoBox(props: Props) {
             {c.label}
             <input
               value={datos[c.key]}
-              placeholder={c.placeholder}
               onChange={(e) => {
                 setDatos({ ...datos, [c.key]: e.target.value });
                 setCopiado(false);
