@@ -53,6 +53,9 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
       .from("leads")
       .select("id,nombre,telefono,tags,historial,ultimo_mensaje_en,mensaje_recontacto")
       .contains("tags", [RECONTACTO_QUEUE_TAG])
+      // Los destacados (★ en el CRM) salen primero: son los que estaban
+      // por pagar e ingresar, y no deben quedar mezclados con la tanda.
+      .order("prioridad", { ascending: false })
       .order("id")
       .limit(1);
 
