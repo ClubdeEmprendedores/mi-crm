@@ -3,17 +3,18 @@
 // (una "contraseña de aplicación" generada en https://myaccount.google.com/apppasswords,
 // no la contraseña normal de la cuenta).
 import nodemailer from "nodemailer";
+import { requireAdmin } from "./_auth.js";
+
+// Un solo destinatario por mail, sin comas, comillas ni saltos de línea: el
+// 15/10/2026 se usaron direcciones "armadas" para colar destinatarios en Bcc.
+const MAIL_SIMPLE = /^[^\s@,;:<>"'()\[\]\\]+@[^\s@,;:<>"'()\[\]\\]+\.[a-z]{2,}$/i;
 
 export default async function handler(req, res) {
-  // DESHABILITADO 15/10/2026: el endpoint no tenía autenticación y alguien
-  // externo lo usó para mandar mensajes en nombre del Club. Queda apagado
-  // hasta que el CRM tenga login y el endpoint verifique la sesión.
-  res.status(503).json({ ok: false, error: "Deshabilitado temporalmente por seguridad." });
-  return;
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, error: "Method not allowed" });
     return;
   }
+  if (!(await requireAdmin(req, res))) return;
 
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
@@ -41,6 +42,10 @@ export default async function handler(req, res) {
     const { to, subject, text } = item ?? {};
     if (!to || !subject || !text) {
       results.push({ to: to ?? null, ok: false, error: "Faltan datos (to/subject/text)" });
+      continue;
+    }
+    if (!MAIL_SIMPLE.test(String(to)) || /[\r\n]/.test(String(subject))) {
+      results.push({ to, ok: false, error: "Destinatario o asunto inválido" });
       continue;
     }
     try {

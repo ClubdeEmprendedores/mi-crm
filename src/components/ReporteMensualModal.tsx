@@ -4,6 +4,7 @@ import { useEscapeKey } from "../hooks/useEscapeKey";
 import { parseReporteMensual, reporteEmailBody } from "../utils/parseReporteMensual";
 import { normalizeSearch } from "../utils/text";
 import { reporteEnviadoMensaje, whatsappUrl } from "../utils/whatsapp";
+import { authHeaders } from "./AuthGate";
 
 type Props = {
   leads: Lead[];
@@ -75,7 +76,7 @@ export function ReporteMensualModal({ leads, onClose, onUpdateLead, onSendWhatsa
       }));
       const res = await fetch("/api/send-report-emails", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({ emails }),
       });
       const data = await res.json();

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { WspConversacion, WspMensaje } from "../types";
+import { authHeaders } from "../components/AuthGate";
 
 type ConvRow = {
   telefono: string;
@@ -98,7 +99,7 @@ export function useWspConversaciones() {
     try {
       const res = await fetch("/api/enviar-whatsapp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({ telefono, texto }),
       });
       const data = await res.json();

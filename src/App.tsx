@@ -18,6 +18,7 @@ import { useLeads } from "./hooks/useLeads";
 import { useTasks } from "./hooks/useTasks";
 import { useWspConversaciones } from "./hooks/useWspConversaciones";
 import type { Contact, Lead, ViewMode } from "./types";
+import { supabase } from "./lib/supabase";
 import { leadsParaRecalcular } from "./utils/conversacion";
 import {
   exportContactsCsv,
@@ -482,6 +483,14 @@ export default function App() {
       <footer className="app-footer">
         Club de Emprendedores · {leads.length} lead{leads.length !== 1 ? "s" : ""}
         {contacts.length > 0 && ` · ${contacts.length} contacto${contacts.length !== 1 ? "s" : ""}`}
+        {" · "}
+        <button
+          type="button"
+          onClick={() => supabase.auth.signOut()}
+          style={{ background: "none", border: "none", color: "inherit", textDecoration: "underline", cursor: "pointer", font: "inherit", padding: 0 }}
+        >
+          Salir
+        </button>
       </footer>
 
       {/* Success toast */}

@@ -1,16 +1,14 @@
 // Proxy server-side hacia wsp-bot/api/enviar-manual.js — guarda el secret
 // compartido (WSP_BOT_API_KEY) fuera del bundle del navegador. Lo llama la
 // pestaña "WhatsApp Bot" del CRM para que Matias responda a mano.
+import { requireAdmin } from "./_auth.js";
+
 export default async function handler(req, res) {
-  // DESHABILITADO 15/10/2026: el endpoint no tenía autenticación y alguien
-  // externo lo usó para mandar mensajes en nombre del Club. Queda apagado
-  // hasta que el CRM tenga login y el endpoint verifique la sesión.
-  res.status(503).json({ ok: false, error: "Deshabilitado temporalmente por seguridad." });
-  return;
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, error: "Method not allowed" });
     return;
   }
+  if (!(await requireAdmin(req, res))) return;
 
   const apiKey = process.env.WSP_BOT_API_KEY;
   if (!apiKey) {
