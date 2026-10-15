@@ -9,6 +9,9 @@
     "service_worker": "background.js",
     "type": "module"
   },
+  "web_accessible_resources": [
+    { "resources": ["campanas/*"], "matches": ["https://web.whatsapp.com/*"] }
+  ],
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],

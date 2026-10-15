@@ -10,6 +10,8 @@ const distDir = path.join(__dirname, "dist");
 const watch = process.argv.includes("--watch");
 
 fs.mkdirSync(distDir, { recursive: true });
+// Imágenes de campañas (las mismas que usa la web del CRM) para copiarlas desde la cola.
+fs.cpSync(path.join(__dirname, "..", "public", "campanas"), path.join(distDir, "campanas"), { recursive: true });
 fs.copyFileSync(
   path.join(__dirname, "manifest.json"),
   path.join(distDir, "manifest.json"),

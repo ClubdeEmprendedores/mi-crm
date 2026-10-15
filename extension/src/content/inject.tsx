@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { Panel } from "./Panel";
 import { QueueBar } from "./QueueBar";
+import { LoginGate } from "./LoginGate";
 import { scheduleSidebarBadgeUpdate } from "./sidebarBadges";
 
 const PANEL_CSS = `
@@ -136,10 +137,10 @@ function mount() {
     lastHeaderText = headerText;
     const phoneMatch = headerText?.match(/\+\d[\d\s-]{8,}\d/) ?? null;
     root.render(
-      <>
+      <LoginGate>
         <QueueBar currentPhone={phoneMatch ? phoneMatch[0] : null} />
         <Panel headerText={headerText} />
-      </>,
+      </LoginGate>,
     );
   }
 

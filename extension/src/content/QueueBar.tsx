@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { getEstadoConversacion } from "../../../src/utils/conversacion";
-import { mensajePorEstadoConversacion } from "../../../src/utils/whatsapp";
+import {
+  copiarImagenAlPortapapeles,
+  mensajePorEstadoConversacion,
+  TALLER_MONOTRIBUTO_IMAGEN,
+  TALLER_MONOTRIBUTO_TAG,
+} from "../../../src/utils/whatsapp";
 import type { HistorialEntry } from "../../../src/types";
 import { useDraggable } from "./useDraggable";
 import { borrarLeadCompleto } from "../lib/borrarLead";
@@ -9,6 +14,11 @@ import { borrarLeadCompleto } from "../lib/borrarLead";
 export const RECONTACTO_QUEUE_TAG = "🎯 Recontacto sept-2026";
 /** Mismo tag que ya usaba el CRM para números sin cuenta de WhatsApp; se excluyen de tandas futuras. */
 export const SIN_WSP_TAG = "Sin WhatsApp - probar Instagram";
+
+/** Campañas que llevan imagen además del texto: etiqueta del lead → archivo empaquetado en la extensión. */
+const IMAGEN_POR_TAG: Record<string, string> = {
+  [TALLER_MONOTRIBUTO_TAG]: TALLER_MONOTRIBUTO_IMAGEN.replace(/^\//, ""),
+};
 
 type QueueLead = {
   id: string;
@@ -37,8 +47,24 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
     refreshCount();
   }, [refreshCount, currentPhone]);
 
-  const [siguienteInfo, setSiguienteInfo] = useState<{ id: string; nombre: string; telefono: string; mensaje: string } | null>(null);
-  const [copiado, setCopiado] = useState<"numero" | "mensaje" | null>(null);
+  const [siguienteInfo, setSiguienteInfo] = useState<{
+    id: string;
+    nombre: string;
+    telefono: string;
+    mensaje: string;
+    imagen: string | null;
+  } | null>(null);
+  const [copiado, setCopiado] = useState<"numero" | "mensaje" | "imagen" | null>(null);
+
+  const copiarImagen = useCallback((ruta: string) => {
+    copiarImagenAlPortapapeles(chrome.runtime.getURL(ruta)).then(
+      () => {
+        setCopiado("imagen");
+        setTimeout(() => setCopiado(null), 2000);
+      },
+      () => setStatus("No pude copiar la imagen"),
+    );
+  }, []);
 
   const copiar = useCallback((texto: string, cual: "numero" | "mensaje") => {
     navigator.clipboard.writeText(texto).then(() => {
@@ -49,15 +75,19 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
 
   const abrirSiguiente = useCallback(async () => {
     setStatus("Buscando...");
-    const { data, error } = await supabase
-      .from("leads")
-      .select("id,nombre,telefono,tags,historial,ultimo_mensaje_en,mensaje_recontacto")
-      .contains("tags", [RECONTACTO_QUEUE_TAG])
+    const buscar = (soloMiembros: boolean) => {
+      let q = supabase
+        .from("leads")
+        .select("id,nombre,telefono,tags,historial,ultimo_mensaje_en,mensaje_recontacto")
+        .contains("tags", [RECONTACTO_QUEUE_TAG]);
+      if (soloMiembros) q = q.eq("etapa", "ganado");
       // Los destacados (★ en el CRM) salen primero: son los que estaban
       // por pagar e ingresar, y no deben quedar mezclados con la tanda.
-      .order("prioridad", { ascending: false })
-      .order("id")
-      .limit(1);
+      return q.order("prioridad", { ascending: false }).order("id").limit(1);
+    };
+    // Los miembros activos van antes que los leads: sus avisos suelen tener fecha.
+    let { data, error } = await buscar(true);
+    if (!error && (!data || data.length === 0)) ({ data, error } = await buscar(false));
 
     if (error) {
       setStatus("Error buscando la cola");
@@ -89,6 +119,7 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
       nombre: siguiente.nombre || siguiente.telefono,
       telefono: siguiente.telefono,
       mensaje: texto,
+      imagen: siguiente.tags.map((t) => IMAGEN_POR_TAG[t]).find(Boolean) ?? null,
     });
     setStatus("Mensaje copiado — buscalo en la lista de WhatsApp y pegalo");
   }, []);
@@ -190,8 +221,18 @@ export function QueueBar({ currentPhone }: { currentPhone: string | null }) {
               onClick={() => copiar(siguienteInfo.mensaje, "mensaje")}
             >
               {copiado === "mensaje" ? "¡Copiado!" : "📋 Copiar mensaje de nuevo"}
-            </button>
+            </button>{" "}
+            {siguienteInfo.imagen && (
+              <button className="mcw-copy-btn" onClick={() => copiarImagen(siguienteInfo.imagen!)}>
+                {copiado === "imagen" ? "¡Copiada!" : "🖼 Copiar placa"}
+              </button>
+            )}
           </div>
+          {siguienteInfo.imagen && (
+            <div style={{ marginTop: 6, color: "#8696a0" }}>
+              3) Mandá el texto. Después tocá "Copiar placa", Ctrl+V y Enter.
+            </div>
+          )}
         </div>
       )}
       <div className="mcw-row">
