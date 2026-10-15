@@ -18,10 +18,14 @@ import {
   aplicarPlantilla,
   BONIFICACION_SANTELMO_TAG,
   bonificacionSanTelmoMensajes,
+  copiarImagenAlPortapapeles,
   mensajeEsperandoTuRespuesta,
   mensajeNuncaRespondioSaludo,
   mensajePrimerContacto,
   mensajeSinRespuestaDeEllos,
+  TALLER_MONOTRIBUTO_IMAGEN,
+  TALLER_MONOTRIBUTO_MENSAJE,
+  TALLER_MONOTRIBUTO_TAG,
   whatsappUrl,
 } from "../utils/whatsapp";
 
@@ -60,6 +64,7 @@ type QuickSendCardProps = {
   position: number;
   total: number;
   defaultMessage: string;
+  imagen: string | null;
   onSend: (lead: Lead, mensaje: string) => void;
   onSkip: () => void;
   onPrev: () => void;
@@ -67,8 +72,16 @@ type QuickSendCardProps = {
 };
 
 /** Tarjeta de un solo lead a la vez, para mandar mensajes rápido sin ir y volver a una tabla. */
-function QuickSendCard({ lead, position, total, defaultMessage, onSend, onSkip, onPrev, canPrev }: QuickSendCardProps) {
+function QuickSendCard({ lead, position, total, defaultMessage, imagen, onSend, onSkip, onPrev, canPrev }: QuickSendCardProps) {
   const [text, setText] = useState(defaultMessage);
+  const [imagenCopiada, setImagenCopiada] = useState<"no" | "ok" | "error">("no");
+  const copiarImagen = () => {
+    if (!imagen) return;
+    copiarImagenAlPortapapeles(imagen).then(
+      () => setImagenCopiada("ok"),
+      () => setImagenCopiada("error"),
+    );
+  };
   const estado = getEstadoConversacion(lead);
   const ultimo = getUltimoContacto(lead);
   const sendLinkRef = useRef<HTMLAnchorElement>(null);
@@ -118,6 +131,25 @@ function QuickSendCard({ lead, position, total, defaultMessage, onSend, onSkip, 
         }}
       />
 
+      {imagen && (
+        <div className="quick-send-imagen">
+          <img src={imagen} alt="Imagen de la campaña" />
+          <div>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={copiarImagen}>
+              📋 Copiar imagen
+            </button>
+            <p className="quick-send-ultimo">
+              {imagenCopiada === "ok"
+                ? "✅ Imagen copiada."
+                : imagenCopiada === "error"
+                  ? "⚠ No se pudo copiar. Arrastrala a WhatsApp a mano."
+                  : "Se copia sola al enviar."}{" "}
+              En WhatsApp: Enter para mandar el texto, después Ctrl+V y Enter para la imagen.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="quick-send-actions">
         <button type="button" className="btn btn-ghost btn-sm" onClick={onPrev} disabled={!canPrev}>
           ← Anterior
@@ -131,7 +163,10 @@ function QuickSendCard({ lead, position, total, defaultMessage, onSend, onSkip, 
           href={whatsappUrl(lead.telefono, text)}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => onSend(lead, text)}
+          onClick={() => {
+            copiarImagen();
+            onSend(lead, text);
+          }}
           title="Ctrl+Enter para enviar y pasar al siguiente"
         >
           💬 Enviar y siguiente
@@ -158,6 +193,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
     "¡Hola {nombre}! Soy Mati, de Club de Emprendedores. ¿Cómo va tu emprendimiento? Te cuento cómo podés tener tu espacio en nuestro showroom.",
   );
   const [rotarVariantes, setRotarVariantes] = useState(false);
+  const [imagen, setImagen] = useState<string | null>(null);
   const [sent, setSent] = useState<Set<string>>(new Set());
   const [quickMode, setQuickMode] = useState(false);
   const [quickIndex, setQuickIndex] = useState(0);
@@ -399,6 +435,23 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                 >
                   🎁 Bonificación San Telmo (6 estilos)
                 </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm whatsapp-template-btn ${imagen === TALLER_MONOTRIBUTO_IMAGEN ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => {
+                    setMensaje(TALLER_MONOTRIBUTO_MENSAJE);
+                    setRotarVariantes(false);
+                    setTag(TALLER_MONOTRIBUTO_TAG);
+                    setImagen(TALLER_MONOTRIBUTO_IMAGEN);
+                    setStageFilter(new Set<Stage>(["ganado"]));
+                    setConversacionFilter(new Set(ESTADOS_CONVERSACION));
+                    setSoloFrios(false);
+                    setSoloIniciadoPorEllos(false);
+                    setExcludeTagged(true);
+                  }}
+                >
+                  🎓 Taller Monotributo (miembros + placa)
+                </button>
               </div>
               {rotarVariantes ? (
                 <div className="whatsapp-box">
@@ -431,6 +484,7 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                 position={currentIndex + 1}
                 total={queue.length}
                 defaultMessage={mensajeParaLead(currentLead.nombre, currentLeadIndexEnFiltro, rotarVariantes, mensaje)}
+                imagen={imagen}
                 onSend={(lead) => handleSend(lead)}
                 onSkip={() => setQuickIndex((i) => Math.min(i + 1, Math.max(queue.length - 1, 0)))}
                 onPrev={() => setQuickIndex((i) => Math.max(i - 1, 0))}
@@ -497,7 +551,10 @@ export function RetargetingModal({ leads, onClose, onApplyTag, onSendWhatsapp }:
                         href={whatsappUrl(lead.telefono, mensajeParaLead(lead.nombre, idx, rotarVariantes, mensaje))}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={() => handleSend(lead)}
+                        onClick={() => {
+                          if (imagen) copiarImagenAlPortapapeles(imagen).catch(() => {});
+                          handleSend(lead);
+                        }}
                         title="Enviar WhatsApp"
                         aria-label="Enviar WhatsApp"
                       >

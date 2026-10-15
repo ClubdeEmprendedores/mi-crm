@@ -172,3 +172,36 @@ export const bonificacionSanTelmoMensajes: Array<(nombre: string) => string> = [
     return `${saludo} Soy Mati, del Club de Emprendedores. Quería avisarte que desde mayo sumamos sede en San Telmo, y estamos bonificando el fee de ingreso a los primeros 15 que respondan este mensaje. Si seguís con tu marca, contame y vemos si te sirve.`;
   },
 ];
+
+export const TALLER_MONOTRIBUTO_TAG = "🎓 Taller Monotributo 20-oct";
+export const TALLER_MONOTRIBUTO_IMAGEN = "/campanas/taller-monotributo.jpg";
+
+/** Invitación a miembros (ambas sedes) al taller de Monotributo. Sin emojis: WhatsApp Desktop los rompe en wa.me. */
+export const TALLER_MONOTRIBUTO_MENSAJE =
+  "¡Hola {nombre}! ¿Cómo andás?\n" +
+  "El martes 20 de octubre a las 17:30 hacemos un Taller de Monotributo para los miembros del Club. Es gratis.\n" +
+  "Lo da Griselda Marcasoli (@administracionmarcasoli), en el local de Sarmiento 1271, San Fernando.\n" +
+  "Vas a ver cómo inscribirte, las categorías, la facturación electrónica, los vencimientos y la recategorización. Y cómo tener tus impuestos al día sin dolores de cabeza.\n" +
+  "¿Te sumás? Confirmame hasta el viernes 16 así te guardamos un lugar.";
+
+/**
+ * Copia una imagen al portapapeles como PNG (el único formato que acepta el navegador),
+ * para pegarla con Ctrl+V en WhatsApp: wa.me solo precarga texto, no adjuntos.
+ * Hay que llamarla dentro del click para no perder el permiso del gesto del usuario.
+ */
+export function copiarImagenAlPortapapeles(url: string): Promise<void> {
+  const png = fetch(url)
+    .then((r) => r.blob())
+    .then((blob) => createImageBitmap(blob))
+    .then(
+      (bmp) =>
+        new Promise<Blob>((resolve, reject) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = bmp.width;
+          canvas.height = bmp.height;
+          canvas.getContext("2d")!.drawImage(bmp, 0, 0);
+          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("No se pudo convertir la imagen"))), "image/png");
+        }),
+    );
+  return navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+}
