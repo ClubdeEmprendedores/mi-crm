@@ -8,7 +8,6 @@ import { KanbanBoard } from "./components/KanbanBoard";
 import { LeadModal } from "./components/LeadModal";
 import { ListView } from "./components/ListView";
 import { MetricsView } from "./components/MetricsView";
-import { ReporteMensualModal } from "./components/ReporteMensualModal";
 import { RetargetingModal } from "./components/RetargetingModal";
 import { TasksView } from "./components/TasksView";
 import { WhatsAppBotView } from "./components/WhatsAppBotView";
@@ -58,7 +57,6 @@ export default function App() {
   const [editingContact, setEditingContact] = useState<Contact | null | undefined>(undefined);
   const [importing, setImporting] = useState(false);
   const [campaignOpen, setCampaignOpen] = useState(false);
-  const [reporteOpen, setReporteOpen] = useState(false);
   const [retargetingOpen, setRetargetingOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -366,16 +364,6 @@ export default function App() {
               </button>
             )}
 
-            {!isContactsView && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setReporteOpen(true)}
-                title="Miembros activos con su mail y datos del mes, para mandarles el reporte por mail y avisarles por WhatsApp"
-              >
-                📊 Reporte mensual
-              </button>
-            )}
 
             {!isContactsView && (
               <button
@@ -583,15 +571,6 @@ export default function App() {
         />
       )}
 
-      {/* Monthly report modal */}
-      {reporteOpen && (
-        <ReporteMensualModal
-          leads={leads}
-          onClose={() => setReporteOpen(false)}
-          onUpdateLead={updateLead}
-          onSendWhatsapp={markMessaged}
-        />
-      )}
 
       {/* Retargeting campaign modal */}
       {retargetingOpen && (
